@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "483532468673",
+    "project_id": "paddlecenterapp",
+    "storage_bucket": "paddlecenterapp.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:483532468673:android:ddac52d58e9f19764abf40",
+        "android_client_info": {
+          "package_name": "com.example.paddlecenterapp"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyApjpDNhlIBtkBDqmJMoW2j6PTbWv0LL4A"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
