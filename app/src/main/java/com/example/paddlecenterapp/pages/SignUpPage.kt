@@ -4,6 +4,7 @@ import android.widget.Toast
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.rounded.CalendarMonth
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -21,6 +22,8 @@ import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.material.icons.rounded.Visibility
 import androidx.compose.material.icons.rounded.VisibilityOff
+import androidx.compose.ui.text.font.FontWeight
+import java.util.Calendar
 
 @Composable
 fun SignUpPage(modifier: Modifier = Modifier, navController: NavController, authViewModel: AuthViewModel) {
@@ -35,6 +38,17 @@ fun SignUpPage(modifier: Modifier = Modifier, navController: NavController, auth
 
     val authState = authViewModel.authState.observeAsState()
     val context = LocalContext.current
+    val calendar = Calendar.getInstance()
+
+    val datePickerDialog = android.app.DatePickerDialog(
+        context,
+        { _, year, month, dayOfMonth ->
+            birthDate = "$dayOfMonth/${month + 1}/$year"
+        },
+        calendar.get(Calendar.YEAR),
+        calendar.get(Calendar.MONTH),
+        calendar.get(Calendar.DAY_OF_MONTH)
+    )
 
     LaunchedEffect(authState.value) {
         when (authState.value) {
@@ -74,10 +88,31 @@ fun SignUpPage(modifier: Modifier = Modifier, navController: NavController, auth
 
         OutlinedTextField(
             value = birthDate,
+            singleLine = true,
             onValueChange = { birthDate = it },
-            label = { Text("Birth Date (dd/mm/yyyy)") },
-            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
+            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+            placeholder = {
+                Text(
+                    text = "dd/mm/yyyy",
+                    fontWeight = FontWeight(400),
+                    fontSize = 14.sp,
+                )
+            },
+            trailingIcon = {
+                IconButton(onClick = { datePickerDialog.show() }) {
+                    Icon(
+                        imageVector = Icons.Rounded.CalendarMonth,
+                        contentDescription = null,
+                    )
+                }
+            },
+            label = {
+                Text(
+                    text = "Birth Date"
+                )
+            },
         )
+
         Spacer(modifier = Modifier.height(8.dp))
 
         // Campi di autenticazione
