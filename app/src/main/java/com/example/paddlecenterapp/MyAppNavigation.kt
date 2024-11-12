@@ -24,13 +24,13 @@ fun MyAppNavigation(modifier: Modifier = Modifier, authViewModel: AuthViewModel)
             SignUpPage(modifier, navController, authViewModel)
         }
         composable("home") {
-            HomePage(modifier, navController, authViewModel)
+            HomePage(modifier, navController)
         }
         composable("search") {
             SearchPage(modifier, navController)
         }
         composable("profile") {
-            ProfilePage(modifier, navController)
+            ProfilePage(modifier, navController, authViewModel)
         }
         composable("book_lesson") {
             BookLessonPage(modifier, navController)

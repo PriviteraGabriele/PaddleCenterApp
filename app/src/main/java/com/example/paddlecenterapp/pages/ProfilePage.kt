@@ -10,10 +10,11 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
+import com.example.paddlecenterapp.AuthViewModel
 import com.example.paddlecenterapp.BottomNavigationBar
 
 @Composable
-fun ProfilePage(modifier: Modifier = Modifier, navController: NavController) {
+fun ProfilePage(modifier: Modifier = Modifier, navController: NavController, authViewModel: AuthViewModel) {
     var selectedItem by remember { mutableStateOf(3) } // Profilo è la terza voce
 
     Scaffold(
@@ -33,6 +34,13 @@ fun ProfilePage(modifier: Modifier = Modifier, navController: NavController) {
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             Text(text = "Profile Page", fontSize = 32.sp)
+
+            TextButton(onClick = {
+                authViewModel.signout()
+                navController.navigate("login") { launchSingleTop = true }
+            }) {
+                Text(text = "Sign out")
+            }
         }
     }
 }
