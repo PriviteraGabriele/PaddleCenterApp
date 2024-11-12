@@ -14,7 +14,7 @@ import com.example.paddlecenterapp.BottomNavigationBar
 
 @Composable
 fun BookLessonPage(modifier: Modifier = Modifier, navController: NavController) {
-    var selectedItem by remember { mutableStateOf(2) } // Prenota Lezione è la quarta voce
+    var selectedItem by remember { mutableIntStateOf(2) } // Prenota Lezione è la quarta voce
 
     Scaffold(
         bottomBar = {

@@ -14,7 +14,7 @@ import com.example.paddlecenterapp.BottomNavigationBar
 
 @Composable
 fun HomePage(modifier: Modifier = Modifier, navController: NavController) {
-    var selectedItem by remember { mutableStateOf(0) }
+    var selectedItem by remember { mutableIntStateOf(0) }
 
     Scaffold(
         bottomBar = {

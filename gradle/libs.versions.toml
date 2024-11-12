@@ -1,23 +1,25 @@
 [versions]
-agp = "8.6.0"
+agp = "8.6.1"
+coilComposeVersion = "2.2.2"
 kotlin = "1.9.0"
-coreKtx = "1.13.1"
+coreKtx = "1.15.0"
 junit = "4.13.2"
 junitVersion = "1.2.1"
 espressoCore = "3.6.1"
-lifecycleRuntimeKtx = "2.8.6"
+lifecycleRuntimeKtx = "2.8.7"
 activityCompose = "1.9.3"
-composeBom = "2024.04.01"
+composeBom = "2024.10.01"
 navigationCompose = "2.8.3"
 googleGmsGoogleServices = "4.4.2"
-firebaseAuth = "23.0.0"
-runtimeLivedata = "1.7.4"
+firebaseAuth = "23.1.0"
+runtimeLivedata = "1.7.5"
 firebaseDatabase = "21.0.0"
 constraintlayoutComposeAndroid = "1.1.0"
 
 [libraries]
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
 androidx-material-icons-extended = { module = "androidx.compose.material:material-icons-extended" }
+coil-kt-coil-compose = { module = "io.coil-kt:coil-compose", version.ref = "coilComposeVersion" }
 junit = { group = "junit", name = "junit", version.ref = "junit" }
 androidx-junit = { group = "androidx.test.ext", name = "junit", version.ref = "junitVersion" }
 androidx-espresso-core = { group = "androidx.test.espresso", name = "espresso-core", version.ref = "espressoCore" }

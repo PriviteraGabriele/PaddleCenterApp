@@ -14,7 +14,7 @@ import com.example.paddlecenterapp.BottomNavigationBar
 
 @Composable
 fun SearchPage(modifier: Modifier = Modifier, navController: NavController) {
-    var selectedItem by remember { mutableStateOf(1) } // Ricerca è la seconda voce
+    var selectedItem by remember { mutableIntStateOf(1) } // Ricerca è la seconda voce
 
     Scaffold(
         bottomBar = {
