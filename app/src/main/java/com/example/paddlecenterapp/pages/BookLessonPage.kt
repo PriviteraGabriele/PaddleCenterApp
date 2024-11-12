@@ -10,12 +10,11 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
-import com.example.paddlecenterapp.AuthViewModel
 import com.example.paddlecenterapp.BottomNavigationBar
 
 @Composable
-fun HomePage(modifier: Modifier = Modifier, navController: NavController, authViewModel: AuthViewModel) {
-    var selectedItem by remember { mutableStateOf(0) }
+fun BookLessonPage(modifier: Modifier = Modifier, navController: NavController) {
+    var selectedItem by remember { mutableStateOf(2) } // Prenota Lezione è la quarta voce
 
     Scaffold(
         bottomBar = {
@@ -33,13 +32,7 @@ fun HomePage(modifier: Modifier = Modifier, navController: NavController, authVi
             verticalArrangement = Arrangement.Center,
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            Text(text = "Home Page", fontSize = 32.sp)
-
-            TextButton(onClick = {
-                authViewModel.signout()
-            }) {
-                Text(text = "Sign out")
-            }
+            Text(text = "Book Lesson Page", fontSize = 32.sp)
         }
     }
 }

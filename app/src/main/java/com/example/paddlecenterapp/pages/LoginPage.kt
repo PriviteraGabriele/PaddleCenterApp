@@ -81,7 +81,7 @@ fun LoginPage(modifier: Modifier = Modifier, navController: NavController, authV
 
         OutlinedTextField(
             value = password,
-            onValueChange = { password = it },
+            onValueChange = { password = it.trim() },
             label = { Text("Password") },
             visualTransformation = if (isPasswordVisible) VisualTransformation.None else PasswordVisualTransformation(),
             trailingIcon = {

@@ -10,12 +10,11 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
-import com.example.paddlecenterapp.AuthViewModel
 import com.example.paddlecenterapp.BottomNavigationBar
 
 @Composable
-fun HomePage(modifier: Modifier = Modifier, navController: NavController, authViewModel: AuthViewModel) {
-    var selectedItem by remember { mutableStateOf(0) }
+fun SearchPage(modifier: Modifier = Modifier, navController: NavController) {
+    var selectedItem by remember { mutableStateOf(1) } // Ricerca è la seconda voce
 
     Scaffold(
         bottomBar = {
@@ -33,13 +32,7 @@ fun HomePage(modifier: Modifier = Modifier, navController: NavController, authVi
             verticalArrangement = Arrangement.Center,
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            Text(text = "Home Page", fontSize = 32.sp)
-
-            TextButton(onClick = {
-                authViewModel.signout()
-            }) {
-                Text(text = "Sign out")
-            }
+            Text(text = "Search Page", fontSize = 32.sp)
         }
     }
 }

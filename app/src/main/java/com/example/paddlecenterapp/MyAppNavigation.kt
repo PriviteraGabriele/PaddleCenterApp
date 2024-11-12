@@ -8,21 +8,32 @@ import androidx.navigation.compose.rememberNavController
 import com.example.paddlecenterapp.pages.HomePage
 import com.example.paddlecenterapp.pages.LoginPage
 import com.example.paddlecenterapp.pages.SignUpPage
+import com.example.paddlecenterapp.pages.SearchPage
+import com.example.paddlecenterapp.pages.ProfilePage
+import com.example.paddlecenterapp.pages.BookLessonPage
 
 @Composable
 fun MyAppNavigation(modifier: Modifier = Modifier, authViewModel: AuthViewModel) {
     val navController = rememberNavController()
 
-    NavHost(navController = navController, startDestination = "login", builder = {
-        composable("login"){
+    NavHost(navController = navController, startDestination = "login") {
+        composable("login") {
             LoginPage(modifier, navController, authViewModel)
         }
-        composable("signup"){
+        composable("signup") {
             SignUpPage(modifier, navController, authViewModel)
         }
-        composable("home"){
+        composable("home") {
             HomePage(modifier, navController, authViewModel)
         }
-    })
+        composable("search") {
+            SearchPage(modifier, navController)
+        }
+        composable("profile") {
+            ProfilePage(modifier, navController)
+        }
+        composable("book_lesson") {
+            BookLessonPage(modifier, navController)
+        }
+    }
 }
-
