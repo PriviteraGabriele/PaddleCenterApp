@@ -23,6 +23,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import coil.compose.rememberAsyncImagePainter
+import coil.request.ImageRequest
+import coil.size.Size
 import com.example.paddlecenterapp.AuthViewModel
 import com.example.paddlecenterapp.BottomNavigationBar
 import java.util.Calendar
@@ -48,14 +50,13 @@ fun ProfilePage(
     // Recupera i dati aggiuntivi da Firebase Realtime Database se l'utente è loggato
     LaunchedEffect(currentUser) {
         if (currentUser != null) {
-            // Carica i dati da Realtime Database
             authViewModel.getUserDataFromRealtimeDatabase(currentUser.uid) { user ->
                 if (user != null) {
                     firstName = user.firstName ?: ""
                     lastName = user.lastName ?: ""
                     birthDate = user.birthDate ?: ""
                     gender = user.gender ?: ""
-                    profileImageUri = Uri.parse(user.profileImageUrl)
+                    profileImageUri = user.profileImageUrl?.let { Uri.parse(it) }
                 }
             }
         }
@@ -103,20 +104,9 @@ fun ProfilePage(
             Box(
                 modifier = Modifier
                     .size(120.dp)
-                    .clip(CircleShape)
                     .padding(8.dp)
             ) {
-                val painter = rememberAsyncImagePainter(
-                    model = profileImageUri
-                )
-                Image(
-                    painter = painter,
-                    contentDescription = "Profile Image",
-                    contentScale = ContentScale.Crop,
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .clip(CircleShape)
-                )
+                ProfileImage(profileImageUri = profileImageUri)
             }
 
             TextButton(onClick = { launcher.launch("image/*") }) {
@@ -148,25 +138,14 @@ fun ProfilePage(
                     onValueChange = { birthDate = it },
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                     placeholder = {
-                        Text(
-                            text = "dd/mm/yyyy",
-                            fontWeight = FontWeight(400),
-                            fontSize = 14.sp,
-                        )
+                        Text(text = "dd/mm/yyyy", fontWeight = FontWeight(400), fontSize = 14.sp)
                     },
                     trailingIcon = {
                         IconButton(onClick = { datePickerDialog.show() }) {
-                            Icon(
-                                imageVector = Icons.Rounded.CalendarMonth,
-                                contentDescription = null,
-                            )
+                            Icon(imageVector = Icons.Rounded.CalendarMonth, contentDescription = null)
                         }
                     },
-                    label = {
-                        Text(
-                            text = "Birth Date"
-                        )
-                    },
+                    label = { Text(text = "Birth Date") }
                 )
                 Spacer(modifier = Modifier.height(8.dp))
 
@@ -176,54 +155,28 @@ fun ProfilePage(
                     horizontalArrangement = Arrangement.spacedBy(16.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        RadioButton(
-                            selected = gender == "Male",
-                            onClick = { gender = "Male" }
-                        )
-                        Text(text = "Male")
-                    }
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        RadioButton(
-                            selected = gender == "Female",
-                            onClick = { gender = "Female" }
-                        )
-                        Text(text = "Female")
-                    }
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        RadioButton(
-                            selected = gender == "Other",
-                            onClick = { gender = "Other" }
-                        )
-                        Text(text = "Other")
+                    listOf("Male", "Female", "Other").forEach {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            RadioButton(selected = gender == it, onClick = { gender = it })
+                            Text(text = it)
+                        }
                     }
                 }
                 Spacer(modifier = Modifier.height(24.dp))
 
-                // Bottone per salvare le modifiche
                 Button(
                     onClick = {
                         authViewModel.updateProfile(
-                            firstName,
-                            lastName,
-                            birthDate,
-                            gender,
-                            profileImageUri  // Passa la stringa dell'URL o vuoto
+                            firstName, lastName, birthDate, gender, profileImageUri
                         )
                     },
                     colors = ButtonDefaults.buttonColors(containerColor = Color.Blue)
                 ) {
                     Text(text = "Save Changes", color = Color.White)
                 }
+
                 Spacer(modifier = Modifier.height(24.dp))
 
-                // Bottone per il logout
                 TextButton(onClick = {
                     authViewModel.signout()
                     navController.navigate("login") { launchSingleTop = true }
@@ -233,4 +186,26 @@ fun ProfilePage(
             }
         }
     }
+}
+
+@Composable
+fun ProfileImage(profileImageUri: Uri?, modifier: Modifier = Modifier) {
+    val context = LocalContext.current
+    val painter = rememberAsyncImagePainter(
+        model = profileImageUri?.let {
+            ImageRequest.Builder(context)
+                .data(it)
+                .size(Size.ORIGINAL)
+                .build()
+        }
+    )
+
+    Image(
+        painter = painter,
+        contentDescription = "Profile Image",
+        contentScale = ContentScale.Crop,
+        modifier = modifier
+            .size(120.dp)
+            .clip(CircleShape)
+    )
 }

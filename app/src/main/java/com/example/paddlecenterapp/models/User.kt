@@ -1,4 +1,4 @@
-package com.example.paddlecenterapp.moduls
+package com.example.paddlecenterapp.models
 
 data class User(
     val firstName: String? = "",

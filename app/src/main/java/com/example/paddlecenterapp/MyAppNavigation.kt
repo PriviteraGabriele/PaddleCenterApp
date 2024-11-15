@@ -10,7 +10,7 @@ import com.example.paddlecenterapp.pages.LoginPage
 import com.example.paddlecenterapp.pages.SignUpPage
 import com.example.paddlecenterapp.pages.SearchPage
 import com.example.paddlecenterapp.pages.ProfilePage
-import com.example.paddlecenterapp.pages.BookLessonPage
+import com.example.paddlecenterapp.pages.ReservationLessonPage
 
 @Composable
 fun MyAppNavigation(modifier: Modifier = Modifier, authViewModel: AuthViewModel) {
@@ -32,8 +32,8 @@ fun MyAppNavigation(modifier: Modifier = Modifier, authViewModel: AuthViewModel)
         composable("profile") {
             ProfilePage(modifier, navController, authViewModel)
         }
-        composable("book_lesson") {
-            BookLessonPage(modifier, navController)
+        composable("reservation_lesson") {
+            ReservationLessonPage(modifier, navController)
         }
     }
 }

@@ -38,10 +38,10 @@ fun BottomNavigationBar(
             selected = selectedItem == 2,
             onClick = {
                 onItemSelected(2)
-                navController.navigate("book_lesson") { launchSingleTop = true }
+                navController.navigate("reservation_lesson") { launchSingleTop = true }
             },
-            icon = { Icon(Icons.Default.School, contentDescription = "Book") },
-            label = { Text("Book") }
+            icon = { Icon(Icons.Default.School, contentDescription = "Reservation") },
+            label = { Text("Reservation") }
         )
         NavigationBarItem(
             selected = selectedItem == 3,

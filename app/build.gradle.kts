@@ -6,7 +6,7 @@ plugins {
 
 android {
     namespace = "com.example.paddlecenterapp"
-    compileSdk = 34
+    compileSdk = 35
 
     defaultConfig {
         applicationId = "com.example.paddlecenterapp"
@@ -67,6 +67,10 @@ dependencies {
     implementation(libs.androidx.constraintlayout.compose.android)
     implementation(libs.androidx.material.icons.extended)
     implementation(libs.coil.kt.coil.compose)
+    implementation(libs.firebase.auth.ktx)
+    implementation(libs.firebase.database.ktx)
+    implementation(libs.material3)
+    implementation(libs.androidx.lifecycle.runtime.ktx.v261)
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)

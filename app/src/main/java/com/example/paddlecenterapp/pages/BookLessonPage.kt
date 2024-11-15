@@ -13,7 +13,7 @@ import androidx.navigation.NavController
 import com.example.paddlecenterapp.BottomNavigationBar
 
 @Composable
-fun BookLessonPage(modifier: Modifier = Modifier, navController: NavController) {
+fun ReservationLessonPage(modifier: Modifier = Modifier, navController: NavController) {
     var selectedItem by remember { mutableIntStateOf(2) } // Prenota Lezione è la quarta voce
 
     Scaffold(
@@ -32,7 +32,7 @@ fun BookLessonPage(modifier: Modifier = Modifier, navController: NavController) 
             verticalArrangement = Arrangement.Center,
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            Text(text = "Book Lesson Page", fontSize = 32.sp)
+            Text(text = "Reservation Lesson Page", fontSize = 32.sp)
         }
     }
 }
