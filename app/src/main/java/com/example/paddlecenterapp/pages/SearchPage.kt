@@ -16,8 +16,10 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
-import com.example.paddlecenterapp.BottomNavigationBar
 import com.example.paddlecenterapp.models.User
+import com.example.paddlecenterapp.models.addFriendToCurrentUser
+import com.example.paddlecenterapp.models.getUserIdByUserObject
+import com.example.paddlecenterapp.BottomNavigationBar
 import kotlinx.coroutines.launch
 import com.example.paddlecenterapp.services.searchUsers
 
@@ -29,6 +31,9 @@ fun SearchPage(modifier: Modifier = Modifier, navController: NavController) {
     val coroutineScope = rememberCoroutineScope()
     var users by remember { mutableStateOf<List<User>>(emptyList()) }
 
+    // SnackbarHostState per gestire i messaggi Snackbar
+    val snackbarHostState = remember { SnackbarHostState() }
+
     Scaffold(
         bottomBar = {
             BottomNavigationBar(
@@ -36,7 +41,8 @@ fun SearchPage(modifier: Modifier = Modifier, navController: NavController) {
                 onItemSelected = { selectedItem = it },
                 navController = navController
             )
-        }
+        },
+        snackbarHost = { SnackbarHost(hostState = snackbarHostState) } // Aggiungi il SnackbarHost
     ) { contentPadding ->
         Column(
             modifier = modifier
@@ -85,16 +91,29 @@ fun SearchPage(modifier: Modifier = Modifier, navController: NavController) {
                 verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 items(users) { user ->
-                    UserItem(user)
+                    UserItem(user, snackbarHostState) // Passa il snackbarHostState alla funzione UserItem
                 }
             }
         }
     }
 }
 
-
 @Composable
-fun UserItem(user: User) {
+fun UserItem(user: User, snackbarHostState: SnackbarHostState) {
+    val coroutineScope = rememberCoroutineScope()
+    val context = LocalContext.current
+
+    // Stato per controllare il messaggio del Snackbar
+    var snackbarMessage by remember { mutableStateOf<String?>(null) }
+
+    // Mostra Snackbar quando `snackbarMessage` viene impostato
+    snackbarMessage?.let { message ->
+        LaunchedEffect(message) {
+            snackbarHostState.showSnackbar(message)
+            snackbarMessage = null // Reset del messaggio dopo la visualizzazione
+        }
+    }
+
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -103,7 +122,7 @@ fun UserItem(user: User) {
     ) {
         Column(modifier = Modifier.weight(1f)) {
             Text(text = "${user.firstName} ${user.lastName}", fontSize = 18.sp)
-            user.email?.let { Text(text = it, fontSize = 14.sp) }
+            Text(text = user.email, fontSize = 14.sp)
         }
 
         Row(
@@ -113,7 +132,24 @@ fun UserItem(user: User) {
         ) {
             Button(
                 onClick = {
-                    // Implementa la logica per aggiungere amici o altre interazioni
+                    // Implementa la logica per aggiungere un amico
+                    getUserIdByUserObject(user) { userId ->
+                        if (userId != null) {
+                            addFriendToCurrentUser(userId) { success ->
+                                coroutineScope.launch {
+                                    snackbarMessage = if (success) {
+                                        "Amico aggiunto con successo!"
+                                    } else {
+                                        "Errore nell'aggiungere l'amico."
+                                    }
+                                }
+                            }
+                        } else {
+                            coroutineScope.launch {
+                                snackbarMessage = "Utente non trovato."
+                            }
+                        }
+                    }
                 },
                 colors = ButtonDefaults.buttonColors(containerColor = Color.Blue.copy(alpha = 0.9f)),
                 shape = CircleShape,
@@ -125,7 +161,7 @@ fun UserItem(user: User) {
 
             Button(
                 onClick = {
-                    // Implementa la logica per il report
+                    Toast.makeText(context, "Report inviato", Toast.LENGTH_SHORT).show()
                 },
                 colors = ButtonDefaults.buttonColors(containerColor = Color.Red.copy(alpha = 0.8f)),
                 shape = CircleShape,
@@ -137,5 +173,3 @@ fun UserItem(user: User) {
         }
     }
 }
-
-
