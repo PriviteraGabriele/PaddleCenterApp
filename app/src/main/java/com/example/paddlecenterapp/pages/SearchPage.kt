@@ -73,7 +73,7 @@ fun SearchPage(modifier: Modifier = Modifier, navController: NavController, auth
                     onClick = {
                         coroutineScope.launch {
                             try {
-                                users = searchUsers(query)
+                                users = searchUsers(query, authViewModel)
                             } catch (e: Exception) {
                                 Toast.makeText(context, "Errore: ${e.message}", Toast.LENGTH_SHORT).show()
                             }
