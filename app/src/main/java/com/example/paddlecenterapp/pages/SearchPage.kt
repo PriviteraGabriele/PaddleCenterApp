@@ -16,20 +16,24 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
+import com.example.paddlecenterapp.AuthViewModel
 import com.example.paddlecenterapp.models.User
 import com.example.paddlecenterapp.models.addFriendToCurrentUser
 import com.example.paddlecenterapp.models.getUserIdByUserObject
 import com.example.paddlecenterapp.BottomNavigationBar
+import com.example.paddlecenterapp.models.checkFriendship
 import kotlinx.coroutines.launch
 import com.example.paddlecenterapp.services.searchUsers
 
 @Composable
-fun SearchPage(modifier: Modifier = Modifier, navController: NavController) {
+fun SearchPage(modifier: Modifier = Modifier, navController: NavController, authViewModel: AuthViewModel
+) {
     var selectedItem by remember { mutableIntStateOf(1) } // Ricerca è la seconda voce
     var query by remember { mutableStateOf("") }
     val context = LocalContext.current
     val coroutineScope = rememberCoroutineScope()
     var users by remember { mutableStateOf<List<User>>(emptyList()) }
+
 
     // SnackbarHostState per gestire i messaggi Snackbar
     val snackbarHostState = remember { SnackbarHostState() }
@@ -91,7 +95,7 @@ fun SearchPage(modifier: Modifier = Modifier, navController: NavController) {
                 verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 items(users) { user ->
-                    UserItem(user, snackbarHostState) // Passa il snackbarHostState alla funzione UserItem
+                    UserItem(user, snackbarHostState, authViewModel) // Passa il snackbarHostState alla funzione UserItem
                 }
             }
         }
@@ -99,7 +103,7 @@ fun SearchPage(modifier: Modifier = Modifier, navController: NavController) {
 }
 
 @Composable
-fun UserItem(user: User, snackbarHostState: SnackbarHostState) {
+fun UserItem(user: User, snackbarHostState: SnackbarHostState, authViewModel: AuthViewModel) {
     val coroutineScope = rememberCoroutineScope()
     val context = LocalContext.current
 
@@ -156,7 +160,43 @@ fun UserItem(user: User, snackbarHostState: SnackbarHostState) {
                 modifier = Modifier.size(48.dp),
                 contentPadding = PaddingValues(0.dp)
             ) {
-                Text("+", fontSize = 20.sp)
+                val currentUser = authViewModel.getCurrentUser()
+
+                var friends by remember { mutableStateOf(mapOf<String, Boolean>()) }
+
+                // Recupera i dati aggiuntivi da Firebase Realtime Database se l'utente è loggato
+                LaunchedEffect(currentUser) {
+                    if (currentUser != null) {
+                        authViewModel.getUserDataFromRealtimeDatabase(currentUser.uid) { user ->
+                            if (user != null) {
+                                friends = user.friends!!
+
+                            }
+                        }
+                    }
+                }
+
+                val textState = remember { mutableStateOf("") }
+
+                val friendId = remember { mutableStateOf("") }
+                val stringValue: String = friendId.value
+
+                LaunchedEffect(user) {
+                    getUserIdByUserObject(user) { userId ->
+                        if (userId != null) {
+                            friendId.value = userId
+                        }
+                    }
+                }
+
+                checkFriendship(stringValue, friends) { isFriend ->
+                    // Aggiorna lo stato di textState
+                    textState.value = if (isFriend) "✓" else "+"
+                }
+
+                // Usa textState per mostrare il testo all'esterno della callback
+                Text(textState.value, fontSize = 20.sp)
+
             }
 
             Button(

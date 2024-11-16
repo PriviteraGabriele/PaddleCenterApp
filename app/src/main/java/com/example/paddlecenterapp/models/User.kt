@@ -56,3 +56,17 @@ fun addFriendToCurrentUser(friendId: String, callback: (Boolean) -> Unit) {
         callback(false)
     }
 }
+
+// Funzione per verificare se l'ID dell'amico è presente nell'array di amici
+fun checkFriendship(friendId: String, friends: Map<String, Boolean>, callback: (Boolean) -> Unit) {
+    // Controlla se l'ID dell'amico è presente nell'array 'friends'
+    if (friendId in friends) {
+        // L'ID dell'amico è presente
+        callback(true)
+    } else {
+        // L'ID dell'amico non è presente
+        callback(false)
+    }
+}
+
+

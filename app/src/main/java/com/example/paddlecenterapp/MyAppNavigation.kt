@@ -27,7 +27,7 @@ fun MyAppNavigation(modifier: Modifier = Modifier, authViewModel: AuthViewModel)
             HomePage(modifier, navController)
         }
         composable("search") {
-            SearchPage(modifier, navController)
+            SearchPage(modifier, navController, authViewModel)
         }
         composable("profile") {
             ProfilePage(modifier, navController, authViewModel)
