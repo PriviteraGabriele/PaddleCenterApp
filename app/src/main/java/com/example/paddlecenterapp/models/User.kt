@@ -10,7 +10,8 @@ data class User(
     val lastName: String = "",
     val gender: String = "",
     val profileImageUrl: String? = null,
-    val friends: Map<String, Boolean>? = null
+    val friends: Map<String, Boolean>? = null,
+    val reports: List<Report>? = null
 )
 
 // Funzione per ottenere l'ID utente passato come input

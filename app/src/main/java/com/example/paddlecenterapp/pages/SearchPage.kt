@@ -1,6 +1,7 @@
 package com.example.paddlecenterapp.pages
 
 import android.widget.Toast
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -21,6 +22,7 @@ import com.example.paddlecenterapp.models.User
 import com.example.paddlecenterapp.models.addFriendToCurrentUser
 import com.example.paddlecenterapp.models.getUserIdByUserObject
 import com.example.paddlecenterapp.BottomNavigationBar
+import com.example.paddlecenterapp.models.addReport
 import com.example.paddlecenterapp.models.checkFriendship
 import kotlinx.coroutines.launch
 import com.example.paddlecenterapp.services.searchUsers
@@ -199,10 +201,10 @@ fun UserItem(user: User, snackbarHostState: SnackbarHostState, authViewModel: Au
 
             }
 
+            var showDialog by remember { mutableStateOf(false) }
+
             Button(
-                onClick = {
-                    Toast.makeText(context, "Report inviato", Toast.LENGTH_SHORT).show()
-                },
+                onClick = { showDialog = true },
                 colors = ButtonDefaults.buttonColors(containerColor = Color.Red.copy(alpha = 0.8f)),
                 shape = CircleShape,
                 modifier = Modifier.size(48.dp),
@@ -210,6 +212,77 @@ fun UserItem(user: User, snackbarHostState: SnackbarHostState, authViewModel: Au
             ) {
                 Text("R", fontSize = 20.sp)
             }
+
+            if (showDialog) {
+                ReportDialog(
+                    onDismiss = { showDialog = false },
+                    onReport = { reason ->
+                        addReport(
+                            context = context,
+                            reportedUserId = "ID_utente_segnalato",
+                            reportedById = "ID_utente_che_segnala",
+                            reason = reason
+                        )
+                    }
+                )
+            }
         }
     }
 }
+
+@Composable
+fun ReportDialog(
+    onDismiss: () -> Unit,
+    onReport: (String) -> Unit
+) {
+    val reportOptions = listOf(
+        "Falsa dichiarazione di vittoria",
+        "Comportamenti antisportivi",
+        "Linguaggio violento"
+    )
+
+    var selectedReason by remember { mutableStateOf("") }
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Segnala utente") },
+        text = {
+            Column {
+                Text("Scegli il motivo della segnalazione:")
+                reportOptions.forEach { option ->
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable { selectedReason = option }
+                            .padding(vertical = 8.dp)
+                    ) {
+                        RadioButton(
+                            selected = selectedReason == option,
+                            onClick = { selectedReason = option }
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(option)
+                    }
+                }
+            }
+        },
+        confirmButton = {
+            Button(
+                onClick = {
+                    if (selectedReason.isNotEmpty()) {
+                        onReport(selectedReason)
+                        onDismiss()
+                    }
+                }
+            ) {
+                Text("Invia")
+            }
+        },
+        dismissButton = {
+            Button(onClick = onDismiss) {
+                Text("Annulla")
+            }
+        }
+    )
+}
+
+
