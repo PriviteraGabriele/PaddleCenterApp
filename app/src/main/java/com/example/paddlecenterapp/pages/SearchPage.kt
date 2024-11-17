@@ -236,31 +236,35 @@ fun ReportDialog(
     onReport: (String) -> Unit
 ) {
     val reportOptions = listOf(
-        "Falsa dichiarazione di vittoria",
-        "Comportamenti antisportivi",
-        "Linguaggio violento"
+        "False claim of victory",
+        "Unsportsmanlike behavior",
+        "Offensive language"
     )
 
     var selectedReason by remember { mutableStateOf("") }
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("Segnala utente") },
+        title = { Text("Report user") },
         text = {
             Column {
-                Text("Scegli il motivo della segnalazione:")
+                Text("Reason for reporting:")
                 reportOptions.forEach { option ->
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
                             .clickable { selectedReason = option }
-                            .padding(vertical = 8.dp)
+                            .padding(vertical = 8.dp),
+                        verticalAlignment = Alignment.CenterVertically // Assicura che i pallini siano allineati correttamente
                     ) {
                         RadioButton(
                             selected = selectedReason == option,
                             onClick = { selectedReason = option }
                         )
                         Spacer(modifier = Modifier.width(8.dp))
-                        Text(option)
+                        Text(
+                            option,
+                            modifier = Modifier.align(Alignment.CenterVertically) // Centra solo il testo
+                        )
                     }
                 }
             }
@@ -274,12 +278,12 @@ fun ReportDialog(
                     }
                 }
             ) {
-                Text("Invia")
+                Text("Send")
             }
         },
         dismissButton = {
             Button(onClick = onDismiss) {
-                Text("Annulla")
+                Text("Cancel")
             }
         }
     )
