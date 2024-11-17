@@ -1,6 +1,7 @@
 package com.example.paddlecenterapp.pages
 
 import android.widget.Toast
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -21,6 +22,7 @@ import com.example.paddlecenterapp.models.User
 import com.example.paddlecenterapp.models.addFriendToCurrentUser
 import com.example.paddlecenterapp.models.getUserIdByUserObject
 import com.example.paddlecenterapp.BottomNavigationBar
+import com.example.paddlecenterapp.models.addReport
 import com.example.paddlecenterapp.models.checkFriendship
 import kotlinx.coroutines.launch
 import com.example.paddlecenterapp.services.searchUsers
@@ -33,7 +35,6 @@ fun SearchPage(modifier: Modifier = Modifier, navController: NavController, auth
     val context = LocalContext.current
     val coroutineScope = rememberCoroutineScope()
     var users by remember { mutableStateOf<List<User>>(emptyList()) }
-
 
     // SnackbarHostState per gestire i messaggi Snackbar
     val snackbarHostState = remember { SnackbarHostState() }
@@ -75,7 +76,7 @@ fun SearchPage(modifier: Modifier = Modifier, navController: NavController, auth
                             try {
                                 users = searchUsers(query, authViewModel)
                             } catch (e: Exception) {
-                                Toast.makeText(context, "Errore: ${e.message}", Toast.LENGTH_SHORT).show()
+                                Toast.makeText(context, "Error: ${e.message}", Toast.LENGTH_SHORT).show()
                             }
                         }
                     },
@@ -142,15 +143,15 @@ fun UserItem(user: User, snackbarHostState: SnackbarHostState, authViewModel: Au
                             addFriendToCurrentUser(userId) { success ->
                                 coroutineScope.launch {
                                     snackbarMessage = if (success) {
-                                        "Amico aggiunto con successo!"
+                                        "Friend added successfully!"
                                     } else {
-                                        "Errore nell'aggiungere l'amico."
+                                        "Error in adding friend."
                                     }
                                 }
                             }
                         } else {
                             coroutineScope.launch {
-                                snackbarMessage = "Utente non trovato."
+                                snackbarMessage = "User not found."
                             }
                         }
                     }
@@ -170,7 +171,6 @@ fun UserItem(user: User, snackbarHostState: SnackbarHostState, authViewModel: Au
                         authViewModel.getUserDataFromRealtimeDatabase(currentUser.uid) { user ->
                             if (user != null) {
                                 friends = user.friends!!
-
                             }
                         }
                     }
@@ -196,13 +196,12 @@ fun UserItem(user: User, snackbarHostState: SnackbarHostState, authViewModel: Au
 
                 // Usa textState per mostrare il testo all'esterno della callback
                 Text(textState.value, fontSize = 20.sp)
-
             }
 
+            var showDialog by remember { mutableStateOf(false) }
+
             Button(
-                onClick = {
-                    Toast.makeText(context, "Report inviato", Toast.LENGTH_SHORT).show()
-                },
+                onClick = { showDialog = true },
                 colors = ButtonDefaults.buttonColors(containerColor = Color.Red.copy(alpha = 0.8f)),
                 shape = CircleShape,
                 modifier = Modifier.size(48.dp),
@@ -210,6 +209,87 @@ fun UserItem(user: User, snackbarHostState: SnackbarHostState, authViewModel: Au
             ) {
                 Text("R", fontSize = 20.sp)
             }
+
+            if (showDialog) {
+                ReportDialog(
+                    onDismiss = { showDialog = false },
+                    onReport = { reason ->
+                        // Ottenere l'ID dell'utente che segnala e dell'utente segnalato
+                        val currentUser = authViewModel.getCurrentUser()
+                        getUserIdByUserObject(user) { reportedUserId ->
+                            val reportedById = currentUser?.uid ?: ""
+
+                            if (reportedUserId != null && reportedById.isNotEmpty()) {
+                                addReport(
+                                    context = context,
+                                    reportedUserId = reportedUserId,
+                                    reportedById = reportedById,
+                                    reason = reason
+                                )
+                            }
+                        }
+                    }
+                )
+            }
         }
     }
+}
+
+@Composable
+fun ReportDialog(
+    onDismiss: () -> Unit,
+    onReport: (String) -> Unit
+) {
+    val reportOptions = listOf(
+        "False claim of victory",
+        "Unsportsmanlike behavior",
+        "Offensive language"
+    )
+
+    var selectedReason by remember { mutableStateOf("") }
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Report user") },
+        text = {
+            Column {
+                Text("Reason for reporting:")
+                reportOptions.forEach { option ->
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable { selectedReason = option }
+                            .padding(vertical = 8.dp),
+                        verticalAlignment = Alignment.CenterVertically // Assicura che i pallini siano allineati correttamente
+                    ) {
+                        RadioButton(
+                            selected = selectedReason == option,
+                            onClick = { selectedReason = option }
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(
+                            option,
+                            modifier = Modifier.align(Alignment.CenterVertically) // Centra solo il testo
+                        )
+                    }
+                }
+            }
+        },
+        confirmButton = {
+            Button(
+                onClick = {
+                    if (selectedReason.isNotEmpty()) {
+                        onReport(selectedReason)
+                        onDismiss()
+                    }
+                }
+            ) {
+                Text("Send")
+            }
+        },
+        dismissButton = {
+            Button(onClick = onDismiss) {
+                Text("Cancel")
+            }
+        }
+    )
 }
