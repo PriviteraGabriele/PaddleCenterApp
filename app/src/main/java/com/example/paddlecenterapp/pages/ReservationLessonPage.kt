@@ -19,11 +19,9 @@ import com.google.firebase.database.ktx.getValue
 import com.google.firebase.auth.FirebaseAuth
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
+import com.example.paddlecenterapp.models.Coach
+import com.example.paddlecenterapp.models.Slot
 import kotlinx.coroutines.launch
-
-// Data model to represent a Coach
-data class Coach(val id: String, val name: String, val availability: Map<String, Slot>)
-data class Slot(val date: String, val status: Boolean)
 
 @SuppressLint("CoroutineCreationDuringComposition")
 @Composable
@@ -111,39 +109,40 @@ fun ReservationLessonPage(modifier: Modifier = Modifier, navController: NavContr
             modifier = modifier
                 .fillMaxSize()
                 .padding(contentPadding),
-            verticalArrangement = Arrangement.Center,
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            Text(text = "Reservation Lesson Page", fontSize = 32.sp)
+            Text(text = "Reservation Lesson", fontSize = 32.sp)
 
             Spacer(modifier = Modifier.height(16.dp))
 
             // Show coach selection
-            Text("Select Coach")
-            LazyColumn {
-                items(coaches) { coach ->
-                    Button(
-                        onClick = { selectedCoach = coach },
-                        modifier = Modifier.fillMaxWidth().padding(8.dp)
-                    ) {
-                        Text(coach.name)
+            if (selectedCoach == null) {
+                Text("Select Coach")
+                LazyColumn {
+                    items(coaches) { coach ->
+                        Button(
+                            onClick = { selectedCoach = coach },
+                            modifier = Modifier.fillMaxWidth().padding(8.dp)
+                        ) {
+                            Text(coach.name)
+                        }
                     }
                 }
             }
 
-            // Show available slots if a coach is selected
-            if (selectedCoach != null) {
+            // Show available slots only if a coach is selected
+            selectedCoach?.let { coach ->
                 Spacer(modifier = Modifier.height(16.dp))
-                Text("Select Slot for ${selectedCoach!!.name}")
+                Text("Select Slot for ${coach.name}")
 
                 LazyColumn {
-                    items(selectedCoach!!.availability.values.toList()) { slot ->
+                    items(coach.availability.values.toList()) { slot ->
                         if (slot.status) { // Only show available slots
                             Button(
                                 onClick = { selectedSlot = slot },
                                 modifier = Modifier.fillMaxWidth().padding(8.dp)
                             ) {
-                                Text("Date: ${slot.date}")
+                                Text(slot.date)
                             }
                         }
                     }
@@ -169,3 +168,4 @@ fun ReservationLessonPage(modifier: Modifier = Modifier, navController: NavContr
         }
     }
 }
+
