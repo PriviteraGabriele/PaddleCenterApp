@@ -2,7 +2,6 @@ package com.example.paddlecenterapp.pages
 
 import android.util.Log
 import android.widget.Toast
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -20,15 +19,15 @@ import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import com.example.paddlecenterapp.AuthViewModel
 import com.example.paddlecenterapp.models.User
-import com.example.paddlecenterapp.models.addFriendToCurrentUser
-import com.example.paddlecenterapp.models.getUserIdByUserObject
 import com.example.paddlecenterapp.BottomNavigationBar
-import com.example.paddlecenterapp.models.addReport
-import com.example.paddlecenterapp.models.checkFriendship
+import com.example.paddlecenterapp.services.ReportDialog
+import com.example.paddlecenterapp.services.addFriendToCurrentUser
+import com.example.paddlecenterapp.services.addReport
+import com.example.paddlecenterapp.services.checkFriendship
+import com.example.paddlecenterapp.services.getUserIdByUserObject
+import com.example.paddlecenterapp.services.removeFriendFromCurrentUser
 import kotlinx.coroutines.launch
 import com.example.paddlecenterapp.services.searchUsers
-import com.google.firebase.auth.FirebaseAuth
-import com.google.firebase.database.FirebaseDatabase
 
 @Composable
 fun SearchPage(modifier: Modifier = Modifier, navController: NavController, authViewModel: AuthViewModel
@@ -297,86 +296,5 @@ fun UserItem(user: User, snackbarHostState: SnackbarHostState, authViewModel: Au
                 }
             )
         }
-    }
-}
-
-@Composable
-fun ReportDialog(
-    onDismiss: () -> Unit,
-    onReport: (String) -> Unit
-) {
-    val reportOptions = listOf(
-        "False claim of victory",
-        "Unsportsmanlike behavior",
-        "Offensive language"
-    )
-
-    var selectedReason by remember { mutableStateOf("") }
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = { Text("Report user") },
-        text = {
-            Column {
-                Text("Reason for reporting:")
-                reportOptions.forEach { option ->
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .clickable { selectedReason = option }
-                            .padding(vertical = 8.dp),
-                        verticalAlignment = Alignment.CenterVertically // Assicura che i pallini siano allineati correttamente
-                    ) {
-                        RadioButton(
-                            selected = selectedReason == option,
-                            onClick = { selectedReason = option }
-                        )
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Text(
-                            option,
-                            modifier = Modifier.align(Alignment.CenterVertically) // Centra solo il testo
-                        )
-                    }
-                }
-            }
-        },
-        confirmButton = {
-            Button(
-                onClick = {
-                    if (selectedReason.isNotEmpty()) {
-                        onReport(selectedReason)
-                        onDismiss()
-                    }
-                }
-            ) {
-                Text("Send")
-            }
-        },
-        dismissButton = {
-            Button(onClick = onDismiss) {
-                Text("Cancel")
-            }
-        }
-    )
-}
-
-fun removeFriendFromCurrentUser(friendId: String, onResult: (Boolean) -> Unit) {
-    val currentUser = FirebaseAuth.getInstance().currentUser
-    if (currentUser != null) {
-        val userRef = FirebaseDatabase.getInstance().getReference("users").child(currentUser.uid)
-
-        // Rimuovi l'ID del nuovo amico dalla lista degli amici
-        userRef.child("friends").child(friendId).removeValue().addOnCompleteListener { task ->
-            if (task.isSuccessful) {
-                // Rimuovi anche il riferimento inverso nella lista dell'amico
-                FirebaseDatabase.getInstance().getReference("users").child(friendId)
-                    .child("friends").child(currentUser.uid).removeValue().addOnCompleteListener { task2 ->
-                        onResult(task2.isSuccessful)
-                    }
-            } else {
-                onResult(false)
-            }
-        }
-    } else {
-        onResult(false)
     }
 }
