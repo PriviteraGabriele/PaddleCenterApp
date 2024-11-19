@@ -20,10 +20,10 @@ fun BottomNavigationBar(
             selected = selectedItem == 0,
             onClick = {
                 onItemSelected(0)
-                navController.navigate("home") { launchSingleTop = true }
+                navController.navigate("reservation_field") { launchSingleTop = true }
             },
-            icon = { Icon(Icons.Default.Home, contentDescription = "Home") },
-            label = { Text("Home") }
+            icon = { Icon(Icons.Default.Home, contentDescription = "Reservation") },
+            label = { Text("Reservation") }
         )
         NavigationBarItem(
             selected = selectedItem == 1,

@@ -5,11 +5,11 @@ import androidx.compose.ui.Modifier
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
-import com.example.paddlecenterapp.pages.HomePage
 import com.example.paddlecenterapp.pages.LoginPage
 import com.example.paddlecenterapp.pages.SignUpPage
 import com.example.paddlecenterapp.pages.SearchPage
 import com.example.paddlecenterapp.pages.ProfilePage
+import com.example.paddlecenterapp.pages.ReservationFieldPage
 import com.example.paddlecenterapp.pages.ReservationLessonPage
 
 @Composable
@@ -23,8 +23,8 @@ fun MyAppNavigation(modifier: Modifier = Modifier, authViewModel: AuthViewModel)
         composable("signup") {
             SignUpPage(modifier, navController, authViewModel)
         }
-        composable("home") {
-            HomePage(modifier, navController)
+        composable("reservation_field") {
+            ReservationFieldPage(modifier, navController)
         }
         composable("search") {
             SearchPage(modifier, navController, authViewModel)
