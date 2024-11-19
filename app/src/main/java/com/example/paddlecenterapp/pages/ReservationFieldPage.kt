@@ -149,14 +149,21 @@ fun ReservationFieldPage(
                                     val userFullName = "${user.firstName} ${user.lastName}"
                                     getUserIdByUserObject(user) { userId ->
                                         if (userId != null) {
-                                            val nextEmptyIndex = participants.indexOfFirst { it.first.isEmpty() }
-                                            if (nextEmptyIndex != -1) {
-                                                participants = participants.toMutableList().apply {
-                                                    this[nextEmptyIndex] = userFullName to userId
+                                            // Controlla se l'ID dell'utente è già presente nella lista dei partecipanti
+                                            if (participants.any { it.second == userId }) {
+                                                coroutineScope.launch {
+                                                    snackbarHostState.showSnackbar("This user is already a participant.")
                                                 }
                                             } else {
-                                                coroutineScope.launch {
-                                                    snackbarHostState.showSnackbar("All participant slots are filled!")
+                                                val nextEmptyIndex = participants.indexOfFirst { it.first.isEmpty() }
+                                                if (nextEmptyIndex != -1) {
+                                                    participants = participants.toMutableList().apply {
+                                                        this[nextEmptyIndex] = userFullName to userId
+                                                    }
+                                                } else {
+                                                    coroutineScope.launch {
+                                                        snackbarHostState.showSnackbar("All participant slots are filled!")
+                                                    }
                                                 }
                                             }
                                         } else {
@@ -271,30 +278,15 @@ fun saveReservation(
                                     }
                             } else {
                                 coroutineScope.launch {
-                                    snackbarHostState.showSnackbar("Error generating reservation ID. Please try again.")
+                                    snackbarHostState.showSnackbar("Failed to generate reservation ID.")
                                 }
                             }
                         }.addOnFailureListener {
                             coroutineScope.launch {
-                                snackbarHostState.showSnackbar("Failed to update slot status. Please contact support.")
+                                snackbarHostState.showSnackbar("Failed to update slot status.")
                             }
                         }
-                } else {
-                    coroutineScope.launch {
-                        snackbarHostState.showSnackbar("No matching slot found for the selected date.")
-                    }
                 }
-            } else {
-                coroutineScope.launch {
-                    snackbarHostState.showSnackbar("No availability data found for the selected field.")
-                }
-            }
-        }
-        .addOnFailureListener {
-            coroutineScope.launch {
-                snackbarHostState.showSnackbar("Error fetching slot information. Please try again.")
             }
         }
 }
-
-
