@@ -71,16 +71,32 @@ fun ReservationFieldPage(modifier: Modifier = Modifier, navController: NavContro
         )
 
         val reservationId = database.child("reservations").child("fields").push().key ?: return
-        database.child("reservations").child("fields").child(reservationId).setValue(reservationData).addOnSuccessListener {
-            val slotKey = selectedField?.availability?.entries?.find { it.value.date == slotDate }?.key
-            if (slotKey != null) {
-                database.child("fields").child(fieldId).child("availability").child(slotKey).child("status")
-                    .setValue(false).addOnSuccessListener {
-                        reservationSuccess = true
-                    }
+
+        // Save reservation data
+        database.child("reservations").child("fields").child(reservationId).setValue(reservationData)
+            .addOnSuccessListener {
+                val slotKey = selectedField?.availability?.entries?.find { it.value.date == slotDate }?.key
+                if (slotKey != null) {
+                    // Update slot status
+                    database.child("fields").child(fieldId).child("availability").child(slotKey).child("status")
+                        .setValue(false).addOnSuccessListener {
+                            coroutineScope.launch {
+                                snackbarHostState.showSnackbar("Reservation successful!")
+                            }
+                        }.addOnFailureListener {
+                            coroutineScope.launch {
+                                snackbarHostState.showSnackbar("Failed to update slot status.")
+                            }
+                        }
+                }
             }
-        }
+            .addOnFailureListener {
+                coroutineScope.launch {
+                    snackbarHostState.showSnackbar("Reservation failed. Please try again.")
+                }
+            }
     }
+
 
     Scaffold(
         bottomBar = {
