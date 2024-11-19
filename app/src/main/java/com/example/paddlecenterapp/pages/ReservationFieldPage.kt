@@ -47,6 +47,21 @@ fun ReservationFieldPage(
         }
     }
 
+    // Ottieni l'utente autenticato
+    val currentUser = authViewModel.getCurrentUser() // supponiamo che tu abbia una proprietà `currentUser` nel view model
+    LaunchedEffect(currentUser) {
+        if (currentUser != null) {
+            authViewModel.getUserDataFromRealtimeDatabase(currentUser.uid) { user ->
+                if (user != null) {
+                    val userFullName = "${user.firstName} ${user.lastName}"
+                    participants = participants.toMutableList().apply {
+                        this[0] = userFullName to currentUser.uid
+                    }
+                }
+            }
+        }
+    }
+
     // Fetch fields data from Firebase
     LaunchedEffect(Unit) {
         database.child("fields").get().addOnSuccessListener {
@@ -170,7 +185,12 @@ fun ReservationFieldPage(
                                     this[index] = updatedValue to this[index].second
                                 }
                             },
-                            label = { Text("Participant ${index + 1}") },
+                            label = {
+                                Text(
+                                    if (index == 0) "Participant ${index + 1} (Me)"
+                                    else "Participant ${index + 1}"
+                                )
+                            },
                             modifier = Modifier.fillMaxWidth().padding(8.dp)
                         )
                     }
