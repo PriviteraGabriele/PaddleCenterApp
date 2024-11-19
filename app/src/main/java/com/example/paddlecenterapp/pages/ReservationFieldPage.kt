@@ -71,7 +71,7 @@ fun ReservationFieldPage(
                 navController = navController
             )
         },
-        snackbarHost = { SnackbarHost(hostState = snackbarHostState) }
+        snackbarHost = { SnackbarHost(hostState = snackbarHostState) } // Configurazione notifiche
     ) { contentPadding ->
         Column(
             modifier = modifier
@@ -221,29 +221,60 @@ fun saveReservation(
         "slotDate" to slotDate
     )
 
-    val reservationId = database.child("reservations").child("fields").push().key ?: return
+    // Recupera tutti gli slot per il campo
+    database.child("fields").child(fieldId).child("availability").get()
+        .addOnSuccessListener { snapshot ->
+            if (snapshot.exists()) {
+                // Trova lo slot con la data corrispondente
+                val slotEntry = snapshot.children.firstOrNull { slotSnapshot ->
+                    val date = slotSnapshot.child("date").getValue(String::class.java)
+                    date == slotDate
+                }
 
-    database.child("reservations").child("fields").child(reservationId).setValue(reservationData)
-        .addOnSuccessListener {
-            database.child("fields").child(fieldId).child("availability")
-                .orderByChild("date").equalTo(slotDate).get().addOnSuccessListener { snapshot ->
-                    snapshot.children.firstOrNull()?.key?.let { slotKey ->
-                        database.child("fields").child(fieldId).child("availability").child(slotKey)
-                            .child("status").setValue(false).addOnSuccessListener {
+                val slotKey = slotEntry?.key
+                if (slotKey != null) {
+                    // Aggiorna lo stato dello slot a `false` (non disponibile)
+                    database.child("fields").child(fieldId).child("availability").child(slotKey)
+                        .child("status").setValue(false).addOnSuccessListener {
+                            // Dopo aver aggiornato lo stato dello slot, salva la prenotazione
+                            val reservationId = database.child("reservations").child("fields").push().key
+                            if (reservationId != null) {
+                                database.child("reservations").child("fields").child(reservationId)
+                                    .setValue(reservationData).addOnSuccessListener {
+                                        coroutineScope.launch {
+                                            snackbarHostState.showSnackbar("Reservation successful!")
+                                        }
+                                    }.addOnFailureListener {
+                                        coroutineScope.launch {
+                                            snackbarHostState.showSnackbar("Reservation failed. Please try again.")
+                                        }
+                                    }
+                            } else {
                                 coroutineScope.launch {
-                                    snackbarHostState.showSnackbar("Reservation successful!")
-                                }
-                            }.addOnFailureListener {
-                                coroutineScope.launch {
-                                    snackbarHostState.showSnackbar("Failed to update slot status.")
+                                    snackbarHostState.showSnackbar("Error generating reservation ID. Please try again.")
                                 }
                             }
+                        }.addOnFailureListener {
+                            coroutineScope.launch {
+                                snackbarHostState.showSnackbar("Failed to update slot status. Please contact support.")
+                            }
+                        }
+                } else {
+                    coroutineScope.launch {
+                        snackbarHostState.showSnackbar("No matching slot found for the selected date.")
                     }
                 }
+            } else {
+                coroutineScope.launch {
+                    snackbarHostState.showSnackbar("No availability data found for the selected field.")
+                }
+            }
         }
         .addOnFailureListener {
             coroutineScope.launch {
-                snackbarHostState.showSnackbar("Reservation failed. Please try again.")
+                snackbarHostState.showSnackbar("Error fetching slot information. Please try again.")
             }
         }
 }
+
+
