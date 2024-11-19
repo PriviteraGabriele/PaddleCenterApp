@@ -1,11 +1,6 @@
 package com.example.paddlecenterapp.pages
 
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.*
@@ -15,29 +10,42 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
+import com.example.paddlecenterapp.AuthViewModel
 import com.example.paddlecenterapp.BottomNavigationBar
 import com.example.paddlecenterapp.models.Field
 import com.example.paddlecenterapp.models.Slot
-import com.google.firebase.database.DatabaseReference
-import com.google.firebase.database.FirebaseDatabase
-import com.google.firebase.database.getValue
+import com.example.paddlecenterapp.models.User
+import com.example.paddlecenterapp.services.getUserIdByUserObject
+import com.example.paddlecenterapp.services.searchUsers
+import com.google.firebase.database.*
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 
 @Composable
-fun ReservationFieldPage(modifier: Modifier = Modifier, navController: NavController) {
+fun ReservationFieldPage(
+    modifier: Modifier = Modifier,
+    navController: NavController,
+    authViewModel: AuthViewModel
+) {
     var selectedItem by remember { mutableIntStateOf(1) }
     var fields by remember { mutableStateOf<List<Field>>(emptyList()) }
     var selectedField by remember { mutableStateOf<Field?>(null) }
     var selectedSlot by remember { mutableStateOf<Slot?>(null) }
-    var participants by remember { mutableStateOf<List<String>>(List(4) { "" }) }
+    var participants by remember { mutableStateOf<List<Pair<String, String?>>>(List(4) { "" to null }) } // Lista di nome -> ID
+    var searchQuery by remember { mutableStateOf("") }
+    var foundUsers by remember { mutableStateOf<List<User>>(emptyList()) }
     val database: DatabaseReference = FirebaseDatabase.getInstance().reference
 
-    // Snackbar state
     val snackbarHostState = remember { SnackbarHostState() }
-    var reservationSuccess by remember { mutableStateOf(false) }
-
-    // Coroutine scope to launch coroutines
     val coroutineScope = rememberCoroutineScope()
+
+    // Funzione per cercare utenti
+    fun performUserSearch(query: String) {
+        coroutineScope.launch {
+            val users = searchUsers(query, authViewModel, flag = true)
+            foundUsers = users
+        }
+    }
 
     // Fetch fields data from Firebase
     LaunchedEffect(Unit) {
@@ -54,49 +62,6 @@ fun ReservationFieldPage(modifier: Modifier = Modifier, navController: NavContro
             }
         }
     }
-
-    // Function to save reservation and update slot status
-    fun saveReservation(fieldId: String, slotDate: String) {
-        if (participants.any { it.isEmpty() }) {
-            coroutineScope.launch {
-                snackbarHostState.showSnackbar("All participant names must be filled!")
-            }
-            return
-        }
-
-        val reservationData = mapOf(
-            "participants" to participants,
-            "fieldId" to fieldId,
-            "slotDate" to slotDate
-        )
-
-        val reservationId = database.child("reservations").child("fields").push().key ?: return
-
-        // Save reservation data
-        database.child("reservations").child("fields").child(reservationId).setValue(reservationData)
-            .addOnSuccessListener {
-                val slotKey = selectedField?.availability?.entries?.find { it.value.date == slotDate }?.key
-                if (slotKey != null) {
-                    // Update slot status
-                    database.child("fields").child(fieldId).child("availability").child(slotKey).child("status")
-                        .setValue(false).addOnSuccessListener {
-                            coroutineScope.launch {
-                                snackbarHostState.showSnackbar("Reservation successful!")
-                            }
-                        }.addOnFailureListener {
-                            coroutineScope.launch {
-                                snackbarHostState.showSnackbar("Failed to update slot status.")
-                            }
-                        }
-                }
-            }
-            .addOnFailureListener {
-                coroutineScope.launch {
-                    snackbarHostState.showSnackbar("Reservation failed. Please try again.")
-                }
-            }
-    }
-
 
     Scaffold(
         bottomBar = {
@@ -116,7 +81,7 @@ fun ReservationFieldPage(modifier: Modifier = Modifier, navController: NavContro
         ) {
             Text(text = "Booking Field", fontSize = 32.sp)
 
-            Spacer(modifier = Modifier.height(16.dp))
+            Spacer(modifier = Modifier.height(22.dp))
 
             if (selectedField == null) {
                 Text("Select Field")
@@ -148,17 +113,62 @@ fun ReservationFieldPage(modifier: Modifier = Modifier, navController: NavContro
                         }
                     }
                 } else {
-                    Text("Selected Field: ${field.name}")
-                    Spacer(modifier = Modifier.height(8.dp))
-                    Text("Selected Slot: ${selectedSlot!!.date}")
+                    Text("${field.name} (${selectedSlot!!.date})")
                     Spacer(modifier = Modifier.height(16.dp))
-                    Text("Enter Participants")
 
+                    // Ricerca utenti
+                    TextField(
+                        value = searchQuery,
+                        onValueChange = {
+                            searchQuery = it
+                            performUserSearch(it)
+                        },
+                        label = { Text("Search for Users") },
+                        modifier = Modifier.fillMaxWidth().padding(8.dp)
+                    )
+
+                    LazyColumn {
+                        items(foundUsers) { user ->
+                            Button(
+                                onClick = {
+                                    val userFullName = "${user.firstName} ${user.lastName}"
+                                    getUserIdByUserObject(user) { userId ->
+                                        if (userId != null) {
+                                            val nextEmptyIndex = participants.indexOfFirst { it.first.isEmpty() }
+                                            if (nextEmptyIndex != -1) {
+                                                participants = participants.toMutableList().apply {
+                                                    this[nextEmptyIndex] = userFullName to userId
+                                                }
+                                            } else {
+                                                coroutineScope.launch {
+                                                    snackbarHostState.showSnackbar("All participant slots are filled!")
+                                                }
+                                            }
+                                        } else {
+                                            coroutineScope.launch {
+                                                snackbarHostState.showSnackbar("Failed to fetch user ID.")
+                                            }
+                                        }
+                                    }
+                                },
+                                modifier = Modifier.fillMaxWidth().padding(8.dp)
+                            ) {
+                                Text("${user.firstName} ${user.lastName}")
+                            }
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(16.dp))
+
+                    // Mostra partecipanti (nomi)
+                    Text("Participants")
                     participants.forEachIndexed { index, participant ->
                         TextField(
-                            value = participant,
+                            value = participant.first,
                             onValueChange = { updatedValue ->
-                                participants = participants.toMutableList().apply { this[index] = updatedValue }
+                                participants = participants.toMutableList().apply {
+                                    this[index] = updatedValue to this[index].second
+                                }
                             },
                             label = { Text("Participant ${index + 1}") },
                             modifier = Modifier.fillMaxWidth().padding(8.dp)
@@ -169,7 +179,14 @@ fun ReservationFieldPage(modifier: Modifier = Modifier, navController: NavContro
                     Button(
                         onClick = {
                             selectedField?.let { field ->
-                                saveReservation(field.id, selectedSlot!!.date)
+                                saveReservation(
+                                    field.id,
+                                    selectedSlot!!.date,
+                                    participants,
+                                    database,
+                                    snackbarHostState,
+                                    coroutineScope
+                                )
                             }
                         },
                         modifier = Modifier.padding(8.dp)
@@ -182,6 +199,51 @@ fun ReservationFieldPage(modifier: Modifier = Modifier, navController: NavContro
     }
 }
 
+// Funzione per salvare la prenotazione e aggiornare lo stato dello slot
+fun saveReservation(
+    fieldId: String,
+    slotDate: String,
+    participants: List<Pair<String, String?>>, // Lista di nome -> ID
+    database: DatabaseReference,
+    snackbarHostState: SnackbarHostState,
+    coroutineScope: CoroutineScope
+) {
+    if (participants.any { it.first.isEmpty() || it.second == null }) {
+        coroutineScope.launch {
+            snackbarHostState.showSnackbar("All participant slots must be filled with valid users!")
+        }
+        return
+    }
 
+    val reservationData = mapOf(
+        "participants" to participants.map { it.second }, // Salva solo gli ID
+        "fieldId" to fieldId,
+        "slotDate" to slotDate
+    )
 
+    val reservationId = database.child("reservations").child("fields").push().key ?: return
 
+    database.child("reservations").child("fields").child(reservationId).setValue(reservationData)
+        .addOnSuccessListener {
+            database.child("fields").child(fieldId).child("availability")
+                .orderByChild("date").equalTo(slotDate).get().addOnSuccessListener { snapshot ->
+                    snapshot.children.firstOrNull()?.key?.let { slotKey ->
+                        database.child("fields").child(fieldId).child("availability").child(slotKey)
+                            .child("status").setValue(false).addOnSuccessListener {
+                                coroutineScope.launch {
+                                    snackbarHostState.showSnackbar("Reservation successful!")
+                                }
+                            }.addOnFailureListener {
+                                coroutineScope.launch {
+                                    snackbarHostState.showSnackbar("Failed to update slot status.")
+                                }
+                            }
+                    }
+                }
+        }
+        .addOnFailureListener {
+            coroutineScope.launch {
+                snackbarHostState.showSnackbar("Reservation failed. Please try again.")
+            }
+        }
+}

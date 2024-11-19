@@ -6,9 +6,14 @@ import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.database.*
 import kotlinx.coroutines.tasks.await
 
-suspend fun searchUsers(query: String, authViewModel: AuthViewModel): List<User> {
+suspend fun searchUsers(query: String, authViewModel: AuthViewModel, flag: Boolean = false): List<User> {
     val databaseRef = FirebaseDatabase.getInstance().getReference("users")
     val userList = mutableListOf<User>()
+
+    // Se la query è vuota, ritorna una lista vuota
+    if (flag && query.isEmpty()) {
+        return userList
+    }
 
     val currentUser = authViewModel.getCurrentUser()
     val snapshot = databaseRef.get().await()

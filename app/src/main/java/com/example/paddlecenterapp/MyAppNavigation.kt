@@ -28,7 +28,7 @@ fun MyAppNavigation(modifier: Modifier = Modifier, authViewModel: AuthViewModel)
             HomePage(modifier, navController)
         }
         composable("reservation_field") {
-            ReservationFieldPage(modifier, navController)
+            ReservationFieldPage(modifier, navController, authViewModel)
         }
         composable("search") {
             SearchPage(modifier, navController, authViewModel)
