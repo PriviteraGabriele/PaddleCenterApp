@@ -32,7 +32,7 @@ import com.example.paddlecenterapp.services.searchUsers
 @Composable
 fun SearchPage(modifier: Modifier = Modifier, navController: NavController, authViewModel: AuthViewModel
 ) {
-    var selectedItem by remember { mutableIntStateOf(1) } // Ricerca è la seconda voce
+    var selectedItem by remember { mutableIntStateOf(2) } // Ricerca è la seconda voce
     var query by remember { mutableStateOf("") }
     val context = LocalContext.current
     val coroutineScope = rememberCoroutineScope()

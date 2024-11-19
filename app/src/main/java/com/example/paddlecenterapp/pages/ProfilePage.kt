@@ -35,7 +35,7 @@ fun ProfilePage(
     navController: NavController,
     authViewModel: AuthViewModel
 ) {
-    var selectedItem by remember { mutableIntStateOf(3) } // Profilo è la terza voce
+    var selectedItem by remember { mutableIntStateOf(4) } // Profilo è la terza voce
 
     // Recupera l'utente attuale da Firebase Authentication
     val currentUser = authViewModel.getCurrentUser()
@@ -52,10 +52,10 @@ fun ProfilePage(
         if (currentUser != null) {
             authViewModel.getUserDataFromRealtimeDatabase(currentUser.uid) { user ->
                 if (user != null) {
-                    firstName = user.firstName ?: ""
-                    lastName = user.lastName ?: ""
-                    birthDate = user.birthDate ?: ""
-                    gender = user.gender ?: ""
+                    firstName = user.firstName
+                    lastName = user.lastName
+                    birthDate = user.birthDate
+                    gender = user.gender
                     profileImageUri = user.profileImageUrl?.let { Uri.parse(it) }
                 }
             }

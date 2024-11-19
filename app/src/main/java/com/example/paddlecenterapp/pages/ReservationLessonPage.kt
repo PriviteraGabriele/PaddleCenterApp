@@ -26,7 +26,7 @@ import kotlinx.coroutines.launch
 @SuppressLint("CoroutineCreationDuringComposition")
 @Composable
 fun ReservationLessonPage(modifier: Modifier = Modifier, navController: NavController) {
-    var selectedItem by remember { mutableIntStateOf(2) }
+    var selectedItem by remember { mutableIntStateOf(3) }
     var coaches by remember { mutableStateOf<List<Coach>>(emptyList()) }
     var selectedCoach by remember { mutableStateOf<Coach?>(null) }
     var selectedSlot by remember { mutableStateOf<Slot?>(null) }
@@ -111,7 +111,7 @@ fun ReservationLessonPage(modifier: Modifier = Modifier, navController: NavContr
                 .padding(contentPadding),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            Text(text = "Reservation Lesson", fontSize = 32.sp)
+            Text(text = "Booking Lesson", fontSize = 32.sp)
 
             Spacer(modifier = Modifier.height(16.dp))
 

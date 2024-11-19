@@ -25,7 +25,7 @@ import kotlinx.coroutines.launch
 
 @Composable
 fun ReservationFieldPage(modifier: Modifier = Modifier, navController: NavController) {
-    var selectedItem by remember { mutableIntStateOf(0) }
+    var selectedItem by remember { mutableIntStateOf(1) }
     var fields by remember { mutableStateOf<List<Field>>(emptyList()) }
     var selectedField by remember { mutableStateOf<Field?>(null) }
     var selectedSlot by remember { mutableStateOf<Slot?>(null) }
@@ -98,7 +98,7 @@ fun ReservationFieldPage(modifier: Modifier = Modifier, navController: NavContro
                 .padding(contentPadding),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            Text(text = "Reservation Field", fontSize = 32.sp)
+            Text(text = "Booking Field", fontSize = 32.sp)
 
             Spacer(modifier = Modifier.height(16.dp))
 
