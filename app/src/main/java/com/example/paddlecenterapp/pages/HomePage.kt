@@ -74,14 +74,49 @@ fun ReservationItem(reservation: Reservation) {
         }
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
-            Text("Tipo: ${reservation.type}", fontSize = 16.sp)
-            Text("Data: ${reservation.slotDate}", fontSize = 16.sp)
+            Text("Type: ${reservation.type}", fontSize = 16.sp)
+            Text("Date: ${reservation.slotDate}", fontSize = 16.sp)
             if (reservation.type == "field") {
-                Text("Partecipanti: ${reservation.participants.joinToString(", ")}", fontSize = 14.sp)
+                ReservationParticipants(participants = reservation.participants)
             } else {
                 Text("Coach: ${reservation.coachId}", fontSize = 14.sp)
             }
         }
+    }
+}
+
+@Composable
+fun ReservationParticipants(participants: List<String>) {
+    // Lista mutable per i nomi dei partecipanti
+    val participantNames = remember { mutableStateListOf<String>() }
+    var isLoading by remember { mutableStateOf(true) } // Stato di caricamento
+
+    // Effetto per caricare i nomi dei partecipanti
+    LaunchedEffect(participants) {
+        participantNames.clear()  // Pulisci i nomi precedenti
+        isLoading = true
+
+        // Recupera i nomi dei partecipanti
+        participants.forEach { userId ->
+            getUserNameAndSurname(userId) { firstName, lastName ->
+                if (firstName != null && lastName != null) {
+                    participantNames.add("$firstName $lastName")
+                } else {
+                    participantNames.add("Unknown User")
+                }
+            }
+        }
+
+        // Dopo aver caricato tutti i partecipanti, imposta isLoading a false
+        isLoading = false
+    }
+
+    // Se stiamo ancora caricando, mostriamo un messaggio di caricamento
+    if (isLoading) {
+        Text("Loading participants...", fontSize = 14.sp)
+    } else {
+        // Mostra i partecipanti una volta caricati
+        Text("Participants: ${participantNames.joinToString(", ")}", fontSize = 14.sp)
     }
 }
 
@@ -142,6 +177,34 @@ fun fetchReservations(
             // Handle error
         }
     })
+}
+
+// Funzione per ottenere nome e cognome dell'utente
+fun getUserNameAndSurname(userId: String, callback: (String?, String?) -> Unit) {
+    // Riferimento al database Firebase
+    val database = FirebaseDatabase.getInstance()
+    val usersRef = database.reference.child("users")
+
+    // Riferimento all'utente specifico
+    val userRef = usersRef.child(userId)
+
+    // Ottieni i dati dell'utente
+    userRef.get().addOnSuccessListener { dataSnapshot ->
+        if (dataSnapshot.exists()) {
+            // Estrai nome e cognome
+            val firstName = dataSnapshot.child("firstName").value as? String
+            val lastName = dataSnapshot.child("lastName").value as? String
+            // Chiamata del callback con nome e cognome
+            callback(firstName, lastName)
+        } else {
+            // Se l'utente non esiste, restituisci null
+            callback(null, null)
+        }
+    }.addOnFailureListener { exception ->
+        // In caso di errore, restituisci null
+        println("Errore: ${exception.message}")
+        callback(null, null)
+    }
 }
 
 data class Reservation(
