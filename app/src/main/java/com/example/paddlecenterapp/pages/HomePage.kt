@@ -64,19 +64,31 @@ fun HomePage(modifier: Modifier = Modifier, navController: NavController) {
 
 @Composable
 fun ReservationItem(reservation: Reservation) {
+    var fieldName by remember { mutableStateOf(reservation.fieldName) }  // Gestione del fieldName
+
+    // Se il fieldName è null, carica dal database
+    LaunchedEffect(reservation.fieldId) {
+        if (fieldName == null && reservation.fieldId != null) {
+            // Recupera il fieldName dal database usando fieldId
+            getFieldNameFromDatabase(reservation.fieldId) { fetchedFieldName ->
+                fieldName = fetchedFieldName
+            }
+        }
+    }
+
     Card(
         modifier = Modifier
             .fillMaxWidth()
             .padding(8.dp),
         onClick = {
             // Navigazione per modificare la prenotazione
-            // Passare l'ID della prenotazione alla schermata di modifica
         }
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
             Text("Type: ${reservation.type}", fontSize = 16.sp)
             Text("Date: ${reservation.slotDate}", fontSize = 16.sp)
             if (reservation.type == "field") {
+                Text("Field: ${fieldName ?: "Loading..."}", fontSize = 16.sp)  // Mostra il fieldName o un messaggio di caricamento
                 ReservationParticipants(participants = reservation.participants)
             } else {
                 Text("Coach: ${reservation.coachId}", fontSize = 14.sp)
@@ -120,6 +132,19 @@ fun ReservationParticipants(participants: List<String>) {
     }
 }
 
+// Funzione per ottenere il fieldName dato un fieldId
+fun getFieldNameFromDatabase(fieldId: String, callback: (String) -> Unit) {
+    val database = FirebaseDatabase.getInstance()
+    val fieldRef = database.reference.child("fields").child(fieldId)
+
+    fieldRef.child("name").get().addOnSuccessListener { snapshot ->
+        val fieldName = snapshot.getValue(String::class.java)
+        callback(fieldName ?: "Unknown Field")
+    }.addOnFailureListener {
+        callback("Error retrieving field name")
+    }
+}
+
 // Funzione per fetchare le prenotazioni attive
 fun fetchReservations(
     database: DatabaseReference,
@@ -136,17 +161,19 @@ fun fetchReservations(
 
             // Fields
             snapshot.child("fields").children.forEach { child ->
-                val fieldId = child.key ?: return@forEach
+                val id = child.key ?: return@forEach
                 val slotDate = child.child("slotDate").getValue(String::class.java) ?: return@forEach
                 val participants = child.child("participants").children.mapNotNull { it.getValue(String::class.java) }
+                val fieldId = child.child("fieldId").getValue(String::class.java)
 
                 if (participants.contains(userId) && LocalDateTime.parse(slotDate, formatter).isAfter(now)) {
                     reservations.add(
                         Reservation(
-                            id = fieldId,
+                            id = id,
                             type = "field",
                             slotDate = slotDate,
-                            participants = participants
+                            participants = participants,
+                            fieldId = fieldId
                         )
                     )
                 }
@@ -212,5 +239,7 @@ data class Reservation(
     val type: String,
     val slotDate: String,
     val participants: List<String> = emptyList(),
-    val coachId: String? = null
+    val coachId: String? = null,
+    val fieldId: String? = null,
+    var fieldName: String? = null  // Aggiungi il fieldName qui
 )
