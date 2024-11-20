@@ -86,6 +86,7 @@ class AuthViewModel : ViewModel() {
                     val uid = auth.currentUser?.uid
                     if (uid != null) {
                         val userMap = mapOf(
+                            "email" to email, // Aggiungi l'email qui
                             "firstName" to firstName,
                             "lastName" to lastName,
                             "birthDate" to birthDate,
