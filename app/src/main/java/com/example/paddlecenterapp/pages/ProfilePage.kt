@@ -95,10 +95,9 @@ fun ProfilePage(
             modifier = modifier
                 .fillMaxSize()
                 .padding(contentPadding),
-            verticalArrangement = Arrangement.Top,
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            Text(text = "Profile Page", fontSize = 32.sp, modifier = Modifier.padding(8.dp))
+            Text(text = "Profile Page", fontSize = 32.sp)
 
             // Sezione per la foto profilo
             Box(

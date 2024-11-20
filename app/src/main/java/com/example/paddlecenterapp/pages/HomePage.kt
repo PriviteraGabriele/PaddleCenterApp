@@ -43,14 +43,15 @@ fun HomePage(modifier: Modifier = Modifier, navController: NavController) {
             modifier = modifier
                 .fillMaxSize()
                 .padding(contentPadding),
-            verticalArrangement = Arrangement.Top,
-            horizontalAlignment = Alignment.Start
+            horizontalAlignment = Alignment.CenterHorizontally
         ) {
             Text(
                 text = "Prenotazioni Attive",
-                fontSize = 24.sp,
-                modifier = Modifier.padding(16.dp)
+                fontSize = 32.sp
             )
+
+            Spacer(modifier = Modifier.height(22.dp))
+
             LazyColumn(
                 modifier = Modifier.fillMaxSize()
             ) {
