@@ -1,25 +1,40 @@
 package com.example.paddlecenterapp.pages
 
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import com.example.paddlecenterapp.BottomNavigationBar
+import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.database.*
+import java.time.LocalDateTime
+import java.time.format.DateTimeFormatter
 
 @Composable
 fun HomePage(modifier: Modifier = Modifier, navController: NavController) {
-    var selectedItem by remember { mutableIntStateOf(0) }
+    val auth = FirebaseAuth.getInstance()
+    val database = FirebaseDatabase.getInstance().getReference("reservations")
+    val currentUserId = auth.currentUser?.uid
+    var activeReservations by remember { mutableStateOf(listOf<Reservation>()) }
+
+    // Fetch reservations
+    LaunchedEffect(Unit) {
+        fetchReservations(database, currentUserId) { reservations ->
+            activeReservations = reservations
+        }
+    }
+
     Scaffold(
         bottomBar = {
             BottomNavigationBar(
-                selectedItem = selectedItem,
-                onItemSelected = { selectedItem = it },
+                selectedItem = 0,
+                onItemSelected = {},
                 navController = navController
             )
         }
@@ -28,10 +43,111 @@ fun HomePage(modifier: Modifier = Modifier, navController: NavController) {
             modifier = modifier
                 .fillMaxSize()
                 .padding(contentPadding),
-            verticalArrangement = Arrangement.Center,
-            horizontalAlignment = Alignment.CenterHorizontally
+            verticalArrangement = Arrangement.Top,
+            horizontalAlignment = Alignment.Start
         ) {
-            Text(text = "Home Page", fontSize = 32.sp)
+            Text(
+                text = "Prenotazioni Attive",
+                fontSize = 24.sp,
+                modifier = Modifier.padding(16.dp)
+            )
+            LazyColumn(
+                modifier = Modifier.fillMaxSize()
+            ) {
+                items(activeReservations) { reservation ->
+                    ReservationItem(reservation = reservation)
+                }
+            }
         }
     }
 }
+
+@Composable
+fun ReservationItem(reservation: Reservation) {
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(8.dp),
+        onClick = {
+            // Navigazione per modificare la prenotazione
+            // Passare l'ID della prenotazione alla schermata di modifica
+        }
+    ) {
+        Column(modifier = Modifier.padding(16.dp)) {
+            Text("Tipo: ${reservation.type}", fontSize = 16.sp)
+            Text("Data: ${reservation.slotDate}", fontSize = 16.sp)
+            if (reservation.type == "field") {
+                Text("Partecipanti: ${reservation.participants.joinToString(", ")}", fontSize = 14.sp)
+            } else {
+                Text("Coach: ${reservation.coachId}", fontSize = 14.sp)
+            }
+        }
+    }
+}
+
+// Funzione per fetchare le prenotazioni attive
+fun fetchReservations(
+    database: DatabaseReference,
+    userId: String?,
+    onResult: (List<Reservation>) -> Unit
+) {
+    if (userId == null) return
+
+    database.addListenerForSingleValueEvent(object : ValueEventListener {
+        override fun onDataChange(snapshot: DataSnapshot) {
+            val now = LocalDateTime.now()
+            val reservations = mutableListOf<Reservation>()
+            val formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm")
+
+            // Fields
+            snapshot.child("fields").children.forEach { child ->
+                val fieldId = child.key ?: return@forEach
+                val slotDate = child.child("slotDate").getValue(String::class.java) ?: return@forEach
+                val participants = child.child("participants").children.mapNotNull { it.getValue(String::class.java) }
+
+                if (participants.contains(userId) && LocalDateTime.parse(slotDate, formatter).isAfter(now)) {
+                    reservations.add(
+                        Reservation(
+                            id = fieldId,
+                            type = "field",
+                            slotDate = slotDate,
+                            participants = participants
+                        )
+                    )
+                }
+            }
+
+            // Lessons
+            snapshot.child("lessons").children.forEach { child ->
+                val lessonId = child.key ?: return@forEach
+                val slotDate = child.child("slotDate").getValue(String::class.java) ?: return@forEach
+                val lessonUserId = child.child("userId").getValue(String::class.java) ?: return@forEach
+
+                if (lessonUserId == userId && LocalDateTime.parse(slotDate, formatter).isAfter(now)) {
+                    reservations.add(
+                        Reservation(
+                            id = lessonId,
+                            type = "lesson",
+                            slotDate = slotDate,
+                            coachId = child.child("coachId").getValue(String::class.java)
+                        )
+                    )
+                }
+            }
+
+            onResult(reservations)
+        }
+
+        override fun onCancelled(error: DatabaseError) {
+            // Handle error
+        }
+    })
+}
+
+data class Reservation(
+    val id: String,
+    val type: String,
+    val slotDate: String,
+    val participants: List<String> = emptyList(),
+    val coachId: String? = null
+)
