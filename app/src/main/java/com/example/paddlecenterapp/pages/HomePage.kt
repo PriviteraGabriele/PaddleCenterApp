@@ -31,7 +31,7 @@ fun HomePage(modifier: Modifier = Modifier, navController: NavController) {
             verticalArrangement = Arrangement.Center,
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            Text(text = "Home Page", fontSize = 32.sp)
+            Text(text = "Home Pageeee", fontSize = 32.sp)
         }
     }
 }
