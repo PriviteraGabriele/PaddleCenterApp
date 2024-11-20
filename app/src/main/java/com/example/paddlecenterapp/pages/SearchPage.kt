@@ -6,8 +6,6 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -30,16 +28,23 @@ import kotlinx.coroutines.launch
 import com.example.paddlecenterapp.services.searchUsers
 
 @Composable
-fun SearchPage(modifier: Modifier = Modifier, navController: NavController, authViewModel: AuthViewModel
-) {
+fun SearchPage(modifier: Modifier = Modifier, navController: NavController, authViewModel: AuthViewModel) {
     var selectedItem by remember { mutableIntStateOf(2) } // Ricerca è la seconda voce
     var query by remember { mutableStateOf("") }
     val context = LocalContext.current
-    val coroutineScope = rememberCoroutineScope()
     var users by remember { mutableStateOf<List<User>>(emptyList()) }
 
     // SnackbarHostState per gestire i messaggi Snackbar
     val snackbarHostState = remember { SnackbarHostState() }
+
+    // Effettua la ricerca in tempo reale ogni volta che `query` cambia
+    LaunchedEffect(query) {
+        try {
+            users = searchUsers(query, authViewModel)
+        } catch (e: Exception) {
+            Toast.makeText(context, "Error: ${e.message}", Toast.LENGTH_SHORT).show()
+        }
+    }
 
     Scaffold(
         bottomBar = {
@@ -57,40 +62,15 @@ fun SearchPage(modifier: Modifier = Modifier, navController: NavController, auth
                 .padding(contentPadding),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            // Barra di ricerca e bottone nella stessa riga
-            Row(
+            // Barra di ricerca
+            OutlinedTextField(
+                value = query,
+                onValueChange = { query = it },
+                label = { Text("Search users...") },
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(16.dp),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                OutlinedTextField(
-                    value = query,
-                    onValueChange = { query = it },
-                    label = { Text("Search users...") },
-                    modifier = Modifier
-                        .weight(1f)
-                )
-
-                IconButton(
-                    onClick = {
-                        coroutineScope.launch {
-                            try {
-                                users = searchUsers(query, authViewModel)
-                            } catch (e: Exception) {
-                                Toast.makeText(context, "Error: ${e.message}", Toast.LENGTH_SHORT).show()
-                            }
-                        }
-                    },
-                    modifier = Modifier.padding(start = 8.dp)
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.Search,
-                        contentDescription = "Search",
-                        tint = MaterialTheme.colorScheme.primary
-                    )
-                }
-            }
+                    .padding(16.dp)
+            )
 
             // Visualizzazione dei risultati
             LazyColumn(

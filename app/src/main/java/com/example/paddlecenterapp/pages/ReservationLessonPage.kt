@@ -22,6 +22,7 @@ import androidx.compose.material3.SnackbarHostState
 import com.example.paddlecenterapp.models.Coach
 import com.example.paddlecenterapp.models.Slot
 import kotlinx.coroutines.launch
+import androidx.compose.material3.Text
 
 @SuppressLint("CoroutineCreationDuringComposition")
 @Composable
@@ -67,16 +68,13 @@ fun ReservationLessonPage(modifier: Modifier = Modifier, navController: NavContr
             "slotDate" to slotDate
         )
 
-        // Save reservation data under "reservations" node in Firebase
         val reservationId = database.child("reservations").child("lessons").push().key ?: return
         database.child("reservations").child("lessons").child(reservationId).setValue(reservationData).addOnSuccessListener {
-            // Once reservation is saved, update the slot status to false
             val slotKey = selectedCoach?.availability?.entries?.find { it.value.date == slotDate }?.key
             if (slotKey != null) {
                 database.child("coaches").child(coachId).child("availability").child(slotKey).child("status")
                     .setValue(false).addOnSuccessListener {
                         Log.d("ReservationLessonPage", "Slot successfully updated to false.")
-                        // Indicate reservation success
                         reservationSuccess = true
                     }.addOnFailureListener {
                         Log.e("ReservationLessonPage", "Failed to update slot status.")
@@ -92,7 +90,7 @@ fun ReservationLessonPage(modifier: Modifier = Modifier, navController: NavContr
         coroutineScope.launch {
             snackbarHostState.showSnackbar("Reservation successfully saved!")
         }
-        reservationSuccess = false // Reset the success flag after showing the Snackbar
+        reservationSuccess = false
     }
 
     Scaffold(
@@ -135,9 +133,20 @@ fun ReservationLessonPage(modifier: Modifier = Modifier, navController: NavContr
                 Spacer(modifier = Modifier.height(16.dp))
                 Text("Select Slot for ${coach.name}")
 
-                LazyColumn {
-                    items(coach.availability.values.toList()) { slot ->
-                        if (slot.status) { // Only show available slots
+                val availableSlots = coach.availability.values.filter { it.status }
+
+                if (availableSlots.isEmpty()) {
+                    Spacer(modifier = Modifier.height(16.dp))
+
+                    // Show message if no slots are available
+                    Text(
+                        text = "No slots available for ${coach.name}.",
+                        fontSize = 16.sp,
+                        color = MaterialTheme.colorScheme.error
+                    )
+                } else {
+                    LazyColumn {
+                        items(availableSlots) { slot ->
                             Button(
                                 onClick = { selectedSlot = slot },
                                 modifier = Modifier.fillMaxWidth().padding(8.dp)
@@ -168,4 +177,3 @@ fun ReservationLessonPage(modifier: Modifier = Modifier, navController: NavContr
         }
     }
 }
-
