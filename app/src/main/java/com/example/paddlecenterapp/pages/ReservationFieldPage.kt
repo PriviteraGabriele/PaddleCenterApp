@@ -113,21 +113,35 @@ fun ReservationFieldPage(
             }
 
             selectedField?.let { field ->
-                if (selectedSlot == null) {
-                    Text("Select Slot for ${field.name}")
+                // Filtra gli slot disponibili
+                val availableSlots = field.availability.values.filter { it.status }
+
+                // Mostra gli slot disponibili
+                Text("Select Slot for ${field.name}")
+
+                if (availableSlots.isEmpty()) {
+                    Spacer(modifier = Modifier.height(16.dp))
+
+                    // Nessun slot disponibile
+                    Text(
+                        text = "No available slots for ${field.name}",
+                        fontSize = 16.sp,
+                        color = MaterialTheme.colorScheme.error,
+                    )
+                } else {
                     LazyColumn {
-                        items(field.availability.values.toList()) { slot ->
-                            if (slot.status) {
-                                Button(
-                                    onClick = { selectedSlot = slot },
-                                    modifier = Modifier.fillMaxWidth().padding(8.dp)
-                                ) {
-                                    Text(slot.date)
-                                }
+                        items(availableSlots) { slot ->
+                            Button(
+                                onClick = { selectedSlot = slot },
+                                modifier = Modifier.fillMaxWidth().padding(8.dp)
+                            ) {
+                                Text(slot.date)
                             }
                         }
                     }
-                } else {
+                }
+
+                selectedSlot?.let {
                     Text("${field.name} (${selectedSlot!!.date})")
                     Spacer(modifier = Modifier.height(16.dp))
 
@@ -266,24 +280,10 @@ fun saveReservation(
                             // Dopo aver aggiornato lo stato dello slot, salva la prenotazione
                             val reservationId = database.child("reservations").child("fields").push().key
                             if (reservationId != null) {
-                                database.child("reservations").child("fields").child(reservationId)
-                                    .setValue(reservationData).addOnSuccessListener {
-                                        coroutineScope.launch {
-                                            snackbarHostState.showSnackbar("Reservation successful!")
-                                        }
-                                    }.addOnFailureListener {
-                                        coroutineScope.launch {
-                                            snackbarHostState.showSnackbar("Reservation failed. Please try again.")
-                                        }
-                                    }
-                            } else {
+                                database.child("reservations").child("fields").child(reservationId).setValue(reservationData)
                                 coroutineScope.launch {
-                                    snackbarHostState.showSnackbar("Failed to generate reservation ID.")
+                                    snackbarHostState.showSnackbar("Reservation confirmed!")
                                 }
-                            }
-                        }.addOnFailureListener {
-                            coroutineScope.launch {
-                                snackbarHostState.showSnackbar("Failed to update slot status.")
                             }
                         }
                 }
