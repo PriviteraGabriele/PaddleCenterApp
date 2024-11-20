@@ -46,7 +46,7 @@ fun HomePage(modifier: Modifier = Modifier, navController: NavController) {
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             Text(
-                text = "Prenotazioni Attive",
+                text = "Active Bookings",
                 fontSize = 32.sp
             )
 
@@ -222,7 +222,9 @@ fun fetchReservations(
                 }
             }
 
-            onResult(reservations)
+            // Ordina le prenotazioni in base alla data
+            val sortedReservations = reservations.sortedBy { LocalDateTime.parse(it.slotDate, formatter) }
+            onResult(sortedReservations)
         }
 
         override fun onCancelled(error: DatabaseError) {
