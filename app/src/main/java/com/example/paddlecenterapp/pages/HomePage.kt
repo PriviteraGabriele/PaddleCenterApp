@@ -65,6 +65,7 @@ fun HomePage(modifier: Modifier = Modifier, navController: NavController) {
 @Composable
 fun ReservationItem(reservation: Reservation) {
     var fieldName by remember { mutableStateOf(reservation.fieldName) }  // Gestione del fieldName
+    var coachName by remember { mutableStateOf(reservation.coachName) } // Gestione del coachName
 
     // Se il fieldName è null, carica dal database
     LaunchedEffect(reservation.fieldId) {
@@ -72,6 +73,16 @@ fun ReservationItem(reservation: Reservation) {
             // Recupera il fieldName dal database usando fieldId
             getFieldNameFromDatabase(reservation.fieldId) { fetchedFieldName ->
                 fieldName = fetchedFieldName
+            }
+        }
+    }
+
+    // Se il coachName è null, carica dal database
+    LaunchedEffect(reservation.coachId) {
+        if (coachName == null && reservation.coachId != null) {
+            // Recupera il coachName dal database usando coachId
+            getCoachNameFromDatabase(reservation.coachId) { fetchedCoachName ->
+                coachName = fetchedCoachName
             }
         }
     }
@@ -91,7 +102,7 @@ fun ReservationItem(reservation: Reservation) {
                 Text("Field: ${fieldName ?: "Loading..."}", fontSize = 16.sp)  // Mostra il fieldName o un messaggio di caricamento
                 ReservationParticipants(participants = reservation.participants)
             } else {
-                Text("Coach: ${reservation.coachId}", fontSize = 14.sp)
+                Text("Coach: ${coachName ?: "Loading..."}", fontSize = 14.sp)  // Mostra il coachName o un messaggio di caricamento
             }
         }
     }
@@ -138,6 +149,19 @@ fun getFieldNameFromDatabase(fieldId: String, callback: (String) -> Unit) {
     val fieldRef = database.reference.child("fields").child(fieldId)
 
     fieldRef.child("name").get().addOnSuccessListener { snapshot ->
+        val fieldName = snapshot.getValue(String::class.java)
+        callback(fieldName ?: "Unknown Field")
+    }.addOnFailureListener {
+        callback("Error retrieving field name")
+    }
+}
+
+// Funzione per ottenere il coachName dato un coachId
+fun getCoachNameFromDatabase(coachId: String, callback: (String) -> Unit) {
+    val database = FirebaseDatabase.getInstance()
+    val coachRef = database.reference.child("coaches").child(coachId)
+
+    coachRef.child("name").get().addOnSuccessListener { snapshot ->
         val fieldName = snapshot.getValue(String::class.java)
         callback(fieldName ?: "Unknown Field")
     }.addOnFailureListener {
@@ -241,5 +265,6 @@ data class Reservation(
     val participants: List<String> = emptyList(),
     val coachId: String? = null,
     val fieldId: String? = null,
-    var fieldName: String? = null  // Aggiungi il fieldName qui
+    var fieldName: String? = null,  // Aggiungi il fieldName qui
+    var coachName: String? = null   // Aggiungi il coachName qui
 )
