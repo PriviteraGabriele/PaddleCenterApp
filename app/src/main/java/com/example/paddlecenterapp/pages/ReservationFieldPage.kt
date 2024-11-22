@@ -116,7 +116,7 @@ fun ReservationFieldPage(
                 // Filtra gli slot disponibili
                 val availableSlots = field.availability.values.filter { it.status }
 
-                // Mostra gli slot disponibili
+                // Mostra gli slot disponibili solo se non è stato selezionato uno slot
                 Text("Select Slot for ${field.name}")
 
                 if (availableSlots.isEmpty()) {
@@ -129,19 +129,23 @@ fun ReservationFieldPage(
                         color = MaterialTheme.colorScheme.error,
                     )
                 } else {
-                    LazyColumn {
-                        items(availableSlots) { slot ->
-                            Button(
-                                onClick = { selectedSlot = slot },
-                                modifier = Modifier.fillMaxWidth().padding(8.dp)
-                            ) {
-                                Text(slot.date)
+                    // Mostra la lista degli slot solo se nessun slot è stato selezionato
+                    if (selectedSlot == null) {
+                        LazyColumn {
+                            items(availableSlots) { slot ->
+                                Button(
+                                    onClick = { selectedSlot = slot },
+                                    modifier = Modifier.fillMaxWidth().padding(8.dp)
+                                ) {
+                                    Text(slot.date)
+                                }
                             }
                         }
                     }
                 }
 
                 selectedSlot?.let {
+                    // Mostra le informazioni sullo slot selezionato
                     Text("${field.name} (${selectedSlot!!.date})")
                     Spacer(modifier = Modifier.height(16.dp))
 
