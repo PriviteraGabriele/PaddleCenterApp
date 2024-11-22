@@ -1,5 +1,6 @@
 package com.example.paddlecenterapp.pages
 
+import android.util.Log
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -15,6 +16,7 @@ import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.database.*
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
+
 
 @Composable
 fun HomePage(modifier: Modifier = Modifier, navController: NavController) {
@@ -65,23 +67,20 @@ fun HomePage(modifier: Modifier = Modifier, navController: NavController) {
 
 @Composable
 fun ReservationItem(reservation: Reservation) {
-    var fieldName by remember { mutableStateOf(reservation.fieldName) }  // Gestione del fieldName
-    var coachName by remember { mutableStateOf(reservation.coachName) } // Gestione del coachName
+    var fieldName by remember { mutableStateOf(reservation.fieldName) }
+    var coachName by remember { mutableStateOf(reservation.coachName) }
+    val database = FirebaseDatabase.getInstance().getReference("reservations")
 
-    // Se il fieldName è null, carica dal database
     LaunchedEffect(reservation.fieldId) {
         if (fieldName == null && reservation.fieldId != null) {
-            // Recupera il fieldName dal database usando fieldId
             getFieldNameFromDatabase(reservation.fieldId) { fetchedFieldName ->
                 fieldName = fetchedFieldName
             }
         }
     }
 
-    // Se il coachName è null, carica dal database
     LaunchedEffect(reservation.coachId) {
         if (coachName == null && reservation.coachId != null) {
-            // Recupera il coachName dal database usando coachId
             getCoachNameFromDatabase(reservation.coachId) { fetchedCoachName ->
                 coachName = fetchedCoachName
             }
@@ -91,23 +90,42 @@ fun ReservationItem(reservation: Reservation) {
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(8.dp),
-        onClick = {
-            // Navigazione per modificare la prenotazione
-        }
+            .padding(8.dp)
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
             Text("Type: ${reservation.type}", fontSize = 16.sp)
             Text("Date: ${reservation.slotDate}", fontSize = 16.sp)
             if (reservation.type == "field") {
-                Text("Field: ${fieldName ?: "Loading..."}", fontSize = 16.sp)  // Mostra il fieldName o un messaggio di caricamento
+                Text("Field: ${fieldName ?: "Loading..."}", fontSize = 16.sp)
                 ReservationParticipants(participants = reservation.participants)
             } else {
-                Text("Coach: ${coachName ?: "Loading..."}", fontSize = 14.sp)  // Mostra il coachName o un messaggio di caricamento
+                Text("Coach: ${coachName ?: "Loading..."}", fontSize = 14.sp)
+            }
+
+            Spacer(modifier = Modifier.height(8.dp))
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                Button(onClick = {
+                    editReservation(database, reservation.id) // Richiama la funzione di modifica
+                }) {
+                    Text("Edit")
+                }
+                Button(
+                    onClick = {
+                        deleteReservation(database, reservation.id) // Richiama la funzione di cancellazione
+                    },
+                    colors = ButtonDefaults.buttonColors(MaterialTheme.colorScheme.error)
+                ) {
+                    Text("Delete")
+                }
             }
         }
     }
 }
+
 
 @Composable
 fun ReservationParticipants(participants: List<String>) {
@@ -271,3 +289,70 @@ data class Reservation(
     var fieldName: String? = null,  // Aggiungi il fieldName qui
     var coachName: String? = null   // Aggiungi il coachName qui
 )
+
+fun editReservation(database: DatabaseReference, reservationId: String) {
+    val participantsRef = database.child("fields").child(reservationId).child("participants")
+
+    participantsRef.get().addOnSuccessListener { snapshot ->
+        val currentParticipants = snapshot.children.mapNotNull { it.getValue(String::class.java) }.toMutableList()
+
+        // Aggiungi o rimuovi partecipanti qui (esempio: aggiungi "newUserId")
+        val newParticipant = "newUserId"
+        if (!currentParticipants.contains(newParticipant)) {
+            currentParticipants.add(newParticipant)
+        }
+
+        participantsRef.setValue(currentParticipants).addOnSuccessListener {
+            println("Reservation updated successfully.")
+        }.addOnFailureListener {
+            println("Failed to update reservation: ${it.message}")
+        }
+    }.addOnFailureListener {
+        println("Failed to fetch reservation: ${it.message}")
+    }
+}
+
+fun deleteReservation(database: DatabaseReference, reservationId: String) {
+    val TAG = "DeleteReservation"
+
+    // Recupera i riferimenti per "lessons" e "fields"
+    val lessonRef = database.child("lessons").child(reservationId)
+    val fieldRef = database.child("fields").child(reservationId)
+
+    // Funzione per eliminare la prenotazione
+    fun removeReservation(ref: DatabaseReference, type: String) {
+        ref.get().addOnSuccessListener { snapshot ->
+            // Verifica se la prenotazione esiste
+            if (snapshot.exists()) {
+                // Recupera il coachId per determinare se è una "lesson"
+                val coachId = snapshot.child("coachId").getValue(String::class.java)
+
+                if (coachId != null) {
+                    // Se è una "lesson", rimuove dalla sezione lessons
+                    database.child("lessons").child(reservationId).removeValue()
+                    Log.i(TAG, "Lesson reservation $reservationId deleted successfully.")
+                } else {
+                    // Altrimenti è una "field reservation", rimuove dalla sezione fields
+                    database.child(type).child(reservationId).removeValue()
+                    Log.i(TAG, "Field reservation $reservationId deleted successfully.")
+                }
+            } else {
+                // La prenotazione non esiste
+                Log.w(TAG, "Reservation $reservationId does not exist in $type.")
+            }
+        }.addOnFailureListener { error ->
+            Log.e(TAG, "Failed to fetch reservation from $type: ${error.message}")
+        }
+    }
+
+    // Verifica prima nelle "lessons"
+    removeReservation(lessonRef, "lessons")
+
+    // Poi nelle "fields"
+    removeReservation(fieldRef, "fields")
+}
+
+
+
+
+
