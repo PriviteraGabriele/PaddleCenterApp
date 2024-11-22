@@ -28,13 +28,13 @@ fun EditReservationPage(
     modifier: Modifier = Modifier,
     navController: NavController,
     authViewModel: AuthViewModel,
-    reservationId: String // Passa l'ID della prenotazione da modificare
+    reservationId: String
 ) {
     var selectedItem by remember { mutableIntStateOf(0) }
     var fields by remember { mutableStateOf<List<Field>>(emptyList()) }
     var selectedField by remember { mutableStateOf<Field?>(null) }
     var selectedSlot by remember { mutableStateOf<Slot?>(null) }
-    var participants by remember { mutableStateOf<List<Pair<String, String?>>>(List(4) { "" to null }) } // Lista di nome -> ID
+    var participants by remember { mutableStateOf<List<Pair<String, String?>>>(List(4) { "" to null }) }
     var searchQuery by remember { mutableStateOf("") }
     var foundUsers by remember { mutableStateOf<List<User>>(emptyList()) }
     val database: DatabaseReference = FirebaseDatabase.getInstance().reference
@@ -42,7 +42,6 @@ fun EditReservationPage(
     val snackbarHostState = remember { SnackbarHostState() }
     val coroutineScope = rememberCoroutineScope()
 
-    // Funzione per cercare utenti
     fun performUserSearch(query: String) {
         coroutineScope.launch {
             val users = searchUsers(query, authViewModel, flag = true)
@@ -50,7 +49,6 @@ fun EditReservationPage(
         }
     }
 
-    // Ottieni l'utente autenticato
     val currentUser = authViewModel.getCurrentUser()
     LaunchedEffect(currentUser) {
         if (currentUser != null) {
@@ -65,7 +63,6 @@ fun EditReservationPage(
         }
     }
 
-    // Fetch fields data from Firebase
     LaunchedEffect(Unit) {
         database.child("fields").get().addOnSuccessListener {
             val fieldMap = it.getValue<Map<String, Map<String, Any>>>()
@@ -80,7 +77,6 @@ fun EditReservationPage(
             }
         }
 
-        // Recupera la prenotazione da modificare
         database.child("reservations").child("fields").child(reservationId).get().addOnSuccessListener { snapshot ->
             if (snapshot.exists()) {
                 val reservationData = snapshot.getValue<Map<String, Any>>()
@@ -88,7 +84,6 @@ fun EditReservationPage(
                     val participantsList = reservationData["participants"] as? List<String>
                     participantsList?.let { participantIds ->
                         participantIds.forEachIndexed { index, userId ->
-                            // Recupera il nome completo dell'utente da Firebase
                             database.child("users").child(userId).get().addOnSuccessListener { userSnapshot ->
                                 val userName = "${userSnapshot.child("firstName").value} ${userSnapshot.child("lastName").value}"
                                 participants = participants.toMutableList().apply {
@@ -128,11 +123,9 @@ fun EditReservationPage(
 
             selectedField?.let { field ->
                 selectedSlot?.let {
-                    // Mostra le informazioni sullo slot selezionato
                     Text("${field.name} (${selectedSlot!!.date})")
                     Spacer(modifier = Modifier.height(16.dp))
 
-                    // Ricerca utenti
                     TextField(
                         value = searchQuery,
                         onValueChange = {
@@ -150,7 +143,6 @@ fun EditReservationPage(
                                     val userFullName = "${user.firstName} ${user.lastName}"
                                     getUserIdByUserObject(user) { userId ->
                                         if (userId != null) {
-                                            // Controlla se l'ID dell'utente è già presente nella lista dei partecipanti
                                             if (participants.any { it.second == userId }) {
                                                 coroutineScope.launch {
                                                     snackbarHostState.showSnackbar("This user is already a participant.")
@@ -183,7 +175,6 @@ fun EditReservationPage(
 
                     Spacer(modifier = Modifier.height(16.dp))
 
-                    // Mostra partecipanti (nomi)
                     Text("Participants")
                     participants.forEachIndexed { index, participant ->
                         Row(modifier = Modifier.fillMaxWidth().padding(8.dp), verticalAlignment = Alignment.CenterVertically) {
@@ -194,17 +185,14 @@ fun EditReservationPage(
                                         this[index] = updatedValue to this[index].second
                                     }
                                 },
-                                label = {
-                                    Text(
-                                        "Participant ${index + 1}"
-                                    )
-                                },
-                                modifier = Modifier.weight(1f)
+                                label = { Text("Participant ${index + 1}") },
+                                modifier = Modifier.weight(1f),
+                                enabled = false // Disabilita la modifica manuale
                             )
                             IconButton(
                                 onClick = {
                                     participants = participants.toMutableList().apply {
-                                        this[index] = "" to null // Rimuovi il partecipante
+                                        this[index] = "" to null
                                     }
                                 }
                             ) {
@@ -216,16 +204,23 @@ fun EditReservationPage(
                     Spacer(modifier = Modifier.height(16.dp))
                     Button(
                         onClick = {
-                            selectedField?.let { field ->
-                                saveReservation(
-                                    field.id,
-                                    selectedSlot?.date ?: "",
-                                    participants.map { it.second ?: "" },
-                                    reservationId,
-                                    database,
-                                    snackbarHostState, // Passa il parametro per la Snackbar
-                                    coroutineScope // Passa il coroutineScope
-                                )
+                            if (participants.any { it.first.isEmpty() }) {
+                                coroutineScope.launch {
+                                    snackbarHostState.showSnackbar("All 4 participants must be selected.")
+                                }
+                            } else {
+                                selectedField?.let { field ->
+                                    saveReservation(
+                                        field.id,
+                                        selectedSlot?.date ?: "",
+                                        participants.map { it.second ?: "" },
+                                        reservationId,
+                                        database,
+                                        snackbarHostState,
+                                        coroutineScope,
+                                        navController
+                                    )
+                                }
                             }
                         },
                         modifier = Modifier.fillMaxWidth().padding(8.dp)
@@ -244,8 +239,9 @@ fun saveReservation(
     participants: List<String>,
     reservationId: String,
     database: DatabaseReference,
-    snackbarHostState: SnackbarHostState, // Aggiungi il parametro per la Snackbar
-    coroutineScope: CoroutineScope // Aggiungi il parametro per coroutineScope
+    snackbarHostState: SnackbarHostState,
+    coroutineScope: CoroutineScope,
+    navController: NavController
 ) {
     val reservationUpdates = mapOf(
         "fieldId" to fieldId,
@@ -255,13 +251,12 @@ fun saveReservation(
 
     database.child("reservations").child("fields").child(reservationId).updateChildren(reservationUpdates)
         .addOnSuccessListener {
-            // Mostra la notifica di successo
             coroutineScope.launch {
                 snackbarHostState.showSnackbar("Reservation updated successfully!")
+                navController.popBackStack() // Torna alla home dopo il salvataggio
             }
         }
         .addOnFailureListener {
-            // Mostra un messaggio di errore in caso di fallimento
             coroutineScope.launch {
                 snackbarHostState.showSnackbar("Failed to update reservation.")
             }
