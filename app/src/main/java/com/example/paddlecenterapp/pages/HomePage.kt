@@ -18,6 +18,7 @@ import com.google.firebase.database.*
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
 import android.content.Context
+import com.example.paddlecenterapp.models.Reservation
 
 @Composable
 fun HomePage(modifier: Modifier = Modifier, navController: NavController) {
@@ -262,17 +263,6 @@ fun getUserNameAndSurname(userId: String, callback: (String?, String?) -> Unit) 
         callback(null, null)
     }
 }
-
-data class Reservation(
-    val id: String,
-    val type: String,
-    val slotDate: String,
-    val participants: List<String> = emptyList(),
-    val coachId: String? = null,
-    val fieldId: String? = null,
-    var fieldName: String? = null,
-    var coachName: String? = null
-)
 
 fun editReservation(database: DatabaseReference, reservationId: String) {
     val participantsRef = database.child("fields").child(reservationId).child("participants")
