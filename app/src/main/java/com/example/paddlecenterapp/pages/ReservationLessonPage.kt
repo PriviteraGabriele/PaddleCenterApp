@@ -23,6 +23,8 @@ import com.example.paddlecenterapp.models.Coach
 import com.example.paddlecenterapp.models.Slot
 import kotlinx.coroutines.launch
 import androidx.compose.material3.Text
+import java.time.LocalDateTime
+import java.time.format.DateTimeFormatter
 
 @SuppressLint("CoroutineCreationDuringComposition")
 @Composable
@@ -45,12 +47,29 @@ fun ReservationLessonPage(modifier: Modifier = Modifier, navController: NavContr
     // Fetch coaches data from Firebase
     LaunchedEffect(Unit) {
         database.child("coaches").get().addOnSuccessListener {
+            val now = LocalDateTime.now()
+            val formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm")
+
             val coachMap = it.getValue<Map<String, Map<String, Any>>>()
             if (coachMap != null) {
                 val coachList = coachMap.map { (key, value) ->
-                    val availability = (value["availability"] as Map<String, Map<String, Any>>).mapValues { entry ->
-                        Slot(entry.value["date"] as String, entry.value["status"] as Boolean)
-                    }
+                    // Filtra gli slot disponibili
+                    val availability = (value["availability"] as Map<String, Map<String, Any>>).mapNotNull { entry ->
+                        val date = entry.value["date"] as? String
+                        val status = entry.value["status"] as? Boolean ?: false
+
+                        if (date != null && status) {
+                            val slotDate = LocalDateTime.parse(date, formatter)
+                            if (slotDate.isAfter(now)) {
+                                entry.key to Slot(date, true)
+                            } else {
+                                null
+                            }
+                        } else {
+                            null
+                        }
+                    }.toMap()
+
                     Coach(key, value["name"] as String, availability)
                 }
                 coaches = coachList
