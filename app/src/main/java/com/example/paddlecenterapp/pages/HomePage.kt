@@ -59,7 +59,12 @@ fun HomePage(modifier: Modifier = Modifier, navController: NavController) {
                 modifier = Modifier.fillMaxSize()
             ) {
                 items(activeReservations) { reservation ->
-                    ReservationItem(reservation = reservation)
+                    ReservationItem(reservation = reservation, onDeleteSuccess = {
+                        // Refresh the list after deletion
+                        fetchReservations(database, currentUserId) { reservations ->
+                            activeReservations = reservations
+                        }
+                    })
                 }
             }
         }
@@ -67,7 +72,7 @@ fun HomePage(modifier: Modifier = Modifier, navController: NavController) {
 }
 
 @Composable
-fun ReservationItem(reservation: Reservation) {
+fun ReservationItem(reservation: Reservation, onDeleteSuccess: () -> Unit) {
     val context = LocalContext.current  // Ottieni il contesto dell'app
     var fieldName by remember { mutableStateOf(reservation.fieldName) }
     var coachName by remember { mutableStateOf(reservation.coachName) }
@@ -117,7 +122,7 @@ fun ReservationItem(reservation: Reservation) {
                 }
                 Button(
                     onClick = {
-                        deleteReservation(context, database, reservation.id) // Passa il context qui
+                        deleteReservation(context, database, reservation.id, onDeleteSuccess) // Passa il context e la callback
                     },
                     colors = ButtonDefaults.buttonColors(MaterialTheme.colorScheme.error)
                 ) {
@@ -273,48 +278,39 @@ fun editReservation(database: DatabaseReference, reservationId: String) {
     val participantsRef = database.child("fields").child(reservationId).child("participants")
 
     participantsRef.get().addOnSuccessListener { snapshot ->
-        val currentParticipants = snapshot.children.mapNotNull { it.getValue(String::class.java) }.toMutableList()
-        val newParticipant = "newUserId"
-        if (!currentParticipants.contains(newParticipant)) {
-            currentParticipants.add(newParticipant)
-        }
+        val currentParticipants = snapshot.children.mapNotNull { it.getValue(String::class.java) }
+        val updatedParticipants = currentParticipants.toMutableList()
+        updatedParticipants.add("newUserId")  // Esempio di aggiunta di un nuovo partecipante
 
-        participantsRef.setValue(currentParticipants).addOnSuccessListener {
-            println("Reservation updated")
-        }
-    }.addOnFailureListener { exception ->
-        println("Error updating reservation: ${exception.message}")
+        participantsRef.setValue(updatedParticipants)
     }
 }
 
-fun deleteReservation(context: Context, database: DatabaseReference, reservationId: String) {
-    // Recupera i riferimenti per "lessons" e "fields"
+fun deleteReservation(
+    context: Context,
+    database: DatabaseReference,
+    reservationId: String,
+    onDeleteSuccess: () -> Unit
+) {
     val lessonRef = database.child("lessons").child(reservationId)
     val fieldRef = database.child("fields").child(reservationId)
 
-    // Funzione per eliminare la prenotazione
-    fun removeReservation(ref: DatabaseReference, type: String) {
+    fun removeReservation(ref: DatabaseReference) {
         ref.get().addOnSuccessListener { snapshot ->
-            // Recupera il coachId per determinare se è una "lesson"
             val coachId = snapshot.child("coachId").getValue(String::class.java)
-
             if (coachId != null) {
-                // Se è una "lesson", rimuove dalla sezione lessons
                 database.child("lessons").child(reservationId).removeValue()
             } else {
-                // Altrimenti è una "field reservation", rimuove dalla sezione fields
                 database.child("fields").child(reservationId).removeValue()
             }
+            onDeleteSuccess()
         }.addOnFailureListener { error ->
             Toast.makeText(context, "Error: ${error.message}", Toast.LENGTH_SHORT).show()
         }
     }
 
-    // Verifica prima nelle "lessons"
-    removeReservation(lessonRef, "lessons")
-
-    // Poi nelle "fields"
-    removeReservation(fieldRef, "fields")
+    removeReservation(lessonRef)
+    removeReservation(fieldRef)
 
     Toast.makeText(context, "Reservation deleted successfully!", Toast.LENGTH_SHORT).show()
 }
