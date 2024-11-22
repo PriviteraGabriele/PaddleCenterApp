@@ -216,7 +216,8 @@ fun ReservationFieldPage(
                                     else "Participant ${index + 1}"
                                 )
                             },
-                            modifier = Modifier.fillMaxWidth().padding(8.dp)
+                            modifier = Modifier.fillMaxWidth().padding(8.dp),
+                            enabled = false // Disabilita la modifica manuale
                         )
                     }
 
