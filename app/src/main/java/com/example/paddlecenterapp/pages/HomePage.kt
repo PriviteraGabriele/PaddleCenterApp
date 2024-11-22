@@ -60,7 +60,7 @@ fun HomePage(modifier: Modifier = Modifier, navController: NavController) {
                 modifier = Modifier.fillMaxSize()
             ) {
                 items(activeReservations) { reservation ->
-                    ReservationItem(reservation = reservation, onDeleteSuccess = {
+                    ReservationItem(reservation = reservation, navController, onDeleteSuccess = {
                         // Refresh the list after deletion
                         fetchReservations(database, currentUserId) { reservations ->
                             activeReservations = reservations
@@ -73,8 +73,8 @@ fun HomePage(modifier: Modifier = Modifier, navController: NavController) {
 }
 
 @Composable
-fun ReservationItem(reservation: Reservation, onDeleteSuccess: () -> Unit) {
-    val context = LocalContext.current  // Ottieni il contesto dell'app
+fun ReservationItem(reservation: Reservation, navController: NavController, onDeleteSuccess: () -> Unit) {
+    val context = LocalContext.current
     var fieldName by remember { mutableStateOf(reservation.fieldName) }
     var coachName by remember { mutableStateOf(reservation.coachName) }
     val database = FirebaseDatabase.getInstance().getReference("reservations")
@@ -117,13 +117,13 @@ fun ReservationItem(reservation: Reservation, onDeleteSuccess: () -> Unit) {
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
                 Button(onClick = {
-                    editReservation(database, reservation.id) // Richiama la funzione di modifica
+                    navController.navigate("edit_reservation/${reservation.id}") // Naviga alla pagina di modifica
                 }) {
                     Text("Edit")
                 }
                 Button(
                     onClick = {
-                        deleteReservation(context, database, reservation.id, onDeleteSuccess) // Passa il context e la callback
+                        deleteReservation(context, database, reservation.id, onDeleteSuccess)
                     },
                     colors = ButtonDefaults.buttonColors(MaterialTheme.colorScheme.error)
                 ) {
@@ -133,6 +133,7 @@ fun ReservationItem(reservation: Reservation, onDeleteSuccess: () -> Unit) {
         }
     }
 }
+
 
 @Composable
 fun ReservationParticipants(participants: List<String>) {
@@ -261,18 +262,6 @@ fun getUserNameAndSurname(userId: String, callback: (String?, String?) -> Unit) 
         }
     }.addOnFailureListener {
         callback(null, null)
-    }
-}
-
-fun editReservation(database: DatabaseReference, reservationId: String) {
-    val participantsRef = database.child("fields").child(reservationId).child("participants")
-
-    participantsRef.get().addOnSuccessListener { snapshot ->
-        val currentParticipants = snapshot.children.mapNotNull { it.getValue(String::class.java) }
-        val updatedParticipants = currentParticipants.toMutableList()
-        updatedParticipants.add("newUserId")  // Esempio di aggiunta di un nuovo partecipante
-
-        participantsRef.setValue(updatedParticipants)
     }
 }
 
