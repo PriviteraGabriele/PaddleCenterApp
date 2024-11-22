@@ -1,6 +1,6 @@
 package com.example.paddlecenterapp.pages
 
-import android.util.Log
+import android.widget.Toast
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -10,13 +10,14 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.platform.LocalContext
 import androidx.navigation.NavController
 import com.example.paddlecenterapp.BottomNavigationBar
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.database.*
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
-
+import android.content.Context
 
 @Composable
 fun HomePage(modifier: Modifier = Modifier, navController: NavController) {
@@ -67,6 +68,7 @@ fun HomePage(modifier: Modifier = Modifier, navController: NavController) {
 
 @Composable
 fun ReservationItem(reservation: Reservation) {
+    val context = LocalContext.current  // Ottieni il contesto dell'app
     var fieldName by remember { mutableStateOf(reservation.fieldName) }
     var coachName by remember { mutableStateOf(reservation.coachName) }
     val database = FirebaseDatabase.getInstance().getReference("reservations")
@@ -115,7 +117,7 @@ fun ReservationItem(reservation: Reservation) {
                 }
                 Button(
                     onClick = {
-                        deleteReservation(database, reservation.id) // Richiama la funzione di cancellazione
+                        deleteReservation(context, database, reservation.id) // Passa il context qui
                     },
                     colors = ButtonDefaults.buttonColors(MaterialTheme.colorScheme.error)
                 ) {
@@ -126,19 +128,15 @@ fun ReservationItem(reservation: Reservation) {
     }
 }
 
-
 @Composable
 fun ReservationParticipants(participants: List<String>) {
-    // Lista mutable per i nomi dei partecipanti
     val participantNames = remember { mutableStateListOf<String>() }
-    var isLoading by remember { mutableStateOf(true) } // Stato di caricamento
+    var isLoading by remember { mutableStateOf(true) }
 
-    // Effetto per caricare i nomi dei partecipanti
     LaunchedEffect(participants) {
-        participantNames.clear()  // Pulisci i nomi precedenti
+        participantNames.clear()
         isLoading = true
 
-        // Recupera i nomi dei partecipanti
         participants.forEach { userId ->
             getUserNameAndSurname(userId) { firstName, lastName ->
                 if (firstName != null && lastName != null) {
@@ -149,20 +147,16 @@ fun ReservationParticipants(participants: List<String>) {
             }
         }
 
-        // Dopo aver caricato tutti i partecipanti, imposta isLoading a false
         isLoading = false
     }
 
-    // Se stiamo ancora caricando, mostriamo un messaggio di caricamento
     if (isLoading) {
         Text("Loading participants...", fontSize = 14.sp)
     } else {
-        // Mostra i partecipanti una volta caricati
         Text("Participants: ${participantNames.joinToString(", ")}", fontSize = 14.sp)
     }
 }
 
-// Funzione per ottenere il fieldName dato un fieldId
 fun getFieldNameFromDatabase(fieldId: String, callback: (String) -> Unit) {
     val database = FirebaseDatabase.getInstance()
     val fieldRef = database.reference.child("fields").child(fieldId)
@@ -175,7 +169,6 @@ fun getFieldNameFromDatabase(fieldId: String, callback: (String) -> Unit) {
     }
 }
 
-// Funzione per ottenere il coachName dato un coachId
 fun getCoachNameFromDatabase(coachId: String, callback: (String) -> Unit) {
     val database = FirebaseDatabase.getInstance()
     val coachRef = database.reference.child("coaches").child(coachId)
@@ -188,7 +181,6 @@ fun getCoachNameFromDatabase(coachId: String, callback: (String) -> Unit) {
     }
 }
 
-// Funzione per fetchare le prenotazioni attive
 fun fetchReservations(
     database: DatabaseReference,
     userId: String?,
@@ -202,7 +194,6 @@ fun fetchReservations(
             val reservations = mutableListOf<Reservation>()
             val formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm")
 
-            // Fields
             snapshot.child("fields").children.forEach { child ->
                 val id = child.key ?: return@forEach
                 val slotDate = child.child("slotDate").getValue(String::class.java) ?: return@forEach
@@ -222,7 +213,6 @@ fun fetchReservations(
                 }
             }
 
-            // Lessons
             snapshot.child("lessons").children.forEach { child ->
                 val lessonId = child.key ?: return@forEach
                 val slotDate = child.child("slotDate").getValue(String::class.java) ?: return@forEach
@@ -240,7 +230,6 @@ fun fetchReservations(
                 }
             }
 
-            // Ordina le prenotazioni in base alla data
             val sortedReservations = reservations.sortedBy { LocalDateTime.parse(it.slotDate, formatter) }
             onResult(sortedReservations)
         }
@@ -251,30 +240,20 @@ fun fetchReservations(
     })
 }
 
-// Funzione per ottenere nome e cognome dell'utente
 fun getUserNameAndSurname(userId: String, callback: (String?, String?) -> Unit) {
-    // Riferimento al database Firebase
     val database = FirebaseDatabase.getInstance()
     val usersRef = database.reference.child("users")
-
-    // Riferimento all'utente specifico
     val userRef = usersRef.child(userId)
 
-    // Ottieni i dati dell'utente
     userRef.get().addOnSuccessListener { dataSnapshot ->
         if (dataSnapshot.exists()) {
-            // Estrai nome e cognome
             val firstName = dataSnapshot.child("firstName").value as? String
             val lastName = dataSnapshot.child("lastName").value as? String
-            // Chiamata del callback con nome e cognome
             callback(firstName, lastName)
         } else {
-            // Se l'utente non esiste, restituisci null
             callback(null, null)
         }
-    }.addOnFailureListener { exception ->
-        // In caso di errore, restituisci null
-        println("Errore: ${exception.message}")
+    }.addOnFailureListener {
         callback(null, null)
     }
 }
@@ -286,8 +265,8 @@ data class Reservation(
     val participants: List<String> = emptyList(),
     val coachId: String? = null,
     val fieldId: String? = null,
-    var fieldName: String? = null,  // Aggiungi il fieldName qui
-    var coachName: String? = null   // Aggiungi il coachName qui
+    var fieldName: String? = null,
+    var coachName: String? = null
 )
 
 fun editReservation(database: DatabaseReference, reservationId: String) {
@@ -295,26 +274,20 @@ fun editReservation(database: DatabaseReference, reservationId: String) {
 
     participantsRef.get().addOnSuccessListener { snapshot ->
         val currentParticipants = snapshot.children.mapNotNull { it.getValue(String::class.java) }.toMutableList()
-
-        // Aggiungi o rimuovi partecipanti qui (esempio: aggiungi "newUserId")
         val newParticipant = "newUserId"
         if (!currentParticipants.contains(newParticipant)) {
             currentParticipants.add(newParticipant)
         }
 
         participantsRef.setValue(currentParticipants).addOnSuccessListener {
-            println("Reservation updated successfully.")
-        }.addOnFailureListener {
-            println("Failed to update reservation: ${it.message}")
+            println("Reservation updated")
         }
-    }.addOnFailureListener {
-        println("Failed to fetch reservation: ${it.message}")
+    }.addOnFailureListener { exception ->
+        println("Error updating reservation: ${exception.message}")
     }
 }
 
-fun deleteReservation(database: DatabaseReference, reservationId: String) {
-    val TAG = "DeleteReservation"
-
+fun deleteReservation(context: Context, database: DatabaseReference, reservationId: String) {
     // Recupera i riferimenti per "lessons" e "fields"
     val lessonRef = database.child("lessons").child(reservationId)
     val fieldRef = database.child("fields").child(reservationId)
@@ -322,26 +295,18 @@ fun deleteReservation(database: DatabaseReference, reservationId: String) {
     // Funzione per eliminare la prenotazione
     fun removeReservation(ref: DatabaseReference, type: String) {
         ref.get().addOnSuccessListener { snapshot ->
-            // Verifica se la prenotazione esiste
-            if (snapshot.exists()) {
-                // Recupera il coachId per determinare se è una "lesson"
-                val coachId = snapshot.child("coachId").getValue(String::class.java)
+            // Recupera il coachId per determinare se è una "lesson"
+            val coachId = snapshot.child("coachId").getValue(String::class.java)
 
-                if (coachId != null) {
-                    // Se è una "lesson", rimuove dalla sezione lessons
-                    database.child("lessons").child(reservationId).removeValue()
-                    Log.i(TAG, "Lesson reservation $reservationId deleted successfully.")
-                } else {
-                    // Altrimenti è una "field reservation", rimuove dalla sezione fields
-                    database.child(type).child(reservationId).removeValue()
-                    Log.i(TAG, "Field reservation $reservationId deleted successfully.")
-                }
+            if (coachId != null) {
+                // Se è una "lesson", rimuove dalla sezione lessons
+                database.child("lessons").child(reservationId).removeValue()
             } else {
-                // La prenotazione non esiste
-                Log.w(TAG, "Reservation $reservationId does not exist in $type.")
+                // Altrimenti è una "field reservation", rimuove dalla sezione fields
+                database.child("fields").child(reservationId).removeValue()
             }
         }.addOnFailureListener { error ->
-            Log.e(TAG, "Failed to fetch reservation from $type: ${error.message}")
+            Toast.makeText(context, "Error: ${error.message}", Toast.LENGTH_SHORT).show()
         }
     }
 
@@ -350,9 +315,6 @@ fun deleteReservation(database: DatabaseReference, reservationId: String) {
 
     // Poi nelle "fields"
     removeReservation(fieldRef, "fields")
+
+    Toast.makeText(context, "Reservation deleted successfully!", Toast.LENGTH_SHORT).show()
 }
-
-
-
-
-
