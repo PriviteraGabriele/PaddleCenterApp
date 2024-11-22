@@ -191,7 +191,6 @@ fun UserItem(user: User, snackbarHostState: SnackbarHostState, authViewModel: Au
                     }
                 }
             },
-            colors = ButtonDefaults.buttonColors(containerColor = Color.Blue.copy(alpha = 0.9f)),
             shape = CircleShape,
             modifier = Modifier.size(48.dp),
             contentPadding = PaddingValues(0.dp)
@@ -246,7 +245,7 @@ fun UserItem(user: User, snackbarHostState: SnackbarHostState, authViewModel: Au
 
         Button(
             onClick = { showDialogReport = true },
-            colors = ButtonDefaults.buttonColors(containerColor = Color.Red.copy(alpha = 0.8f)),
+            colors = ButtonDefaults.buttonColors(MaterialTheme.colorScheme.error),
             shape = CircleShape,
             modifier = Modifier.size(48.dp),
             contentPadding = PaddingValues(0.dp)
