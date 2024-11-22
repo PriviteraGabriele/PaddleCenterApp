@@ -19,6 +19,9 @@ import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
 import android.content.Context
 import com.example.paddlecenterapp.models.Reservation
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.Delete
 
 @Composable
 fun HomePage(modifier: Modifier = Modifier, navController: NavController) {
@@ -114,26 +117,39 @@ fun ReservationItem(reservation: Reservation, navController: NavController, onDe
 
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween
+                horizontalArrangement = Arrangement.spacedBy(16.dp), // Spazio tra i tasti
+                verticalAlignment = Alignment.CenterVertically // Allineamento verticale dei tasti
             ) {
-                Button(onClick = {
-                    navController.navigate("edit_reservation/${reservation.id}") // Naviga alla pagina di modifica
-                }) {
-                    Text("Edit")
+                if (reservation.type == "field") {
+                    Button(
+                        onClick = {
+                            navController.navigate("edit_reservation/${reservation.id}")
+                        },
+                        modifier = Modifier.weight(1f)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Edit,
+                            contentDescription = "Edit reservation",
+                        )
+                    }
                 }
+
                 Button(
                     onClick = {
                         deleteReservation(context, database, reservation.id, onDeleteSuccess)
                     },
-                    colors = ButtonDefaults.buttonColors(MaterialTheme.colorScheme.error)
+                    colors = ButtonDefaults.buttonColors(MaterialTheme.colorScheme.error),
+                    modifier = Modifier.weight(1f)
                 ) {
-                    Text("Delete")
+                    Icon(
+                        imageVector = Icons.Default.Delete,
+                        contentDescription = "Delete reservation",
+                    )
                 }
             }
         }
     }
 }
-
 
 @Composable
 fun ReservationParticipants(participants: List<String>) {
