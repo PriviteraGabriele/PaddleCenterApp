@@ -69,6 +69,9 @@ fun ReservationLessonPage(modifier: Modifier = Modifier, navController: NavContr
                             null
                         }
                     }.toMap()
+                        .toList()
+                        .sortedBy { LocalDateTime.parse(it.second.date, formatter) } // Ordinamento
+                        .toMap()
 
                     Coach(key, value["name"] as String, availability)
                 }

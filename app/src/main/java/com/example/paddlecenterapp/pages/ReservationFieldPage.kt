@@ -89,6 +89,9 @@ fun ReservationFieldPage(
                             null
                         }
                     }.toMap()
+                        .toList()
+                        .sortedBy { LocalDateTime.parse(it.second.date, formatter) } // Ordinamento
+                        .toMap()
 
                     // Crea l'oggetto Field
                     Field(key, value["name"] as String, availability)
