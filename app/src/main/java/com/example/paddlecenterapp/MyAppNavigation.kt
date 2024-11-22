@@ -5,6 +5,7 @@ import androidx.compose.ui.Modifier
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import com.example.paddlecenterapp.pages.EditReservationPage
 import com.example.paddlecenterapp.pages.HomePage
 import com.example.paddlecenterapp.pages.LoginPage
 import com.example.paddlecenterapp.pages.SignUpPage
@@ -38,6 +39,14 @@ fun MyAppNavigation(modifier: Modifier = Modifier, authViewModel: AuthViewModel)
         }
         composable("reservation_lesson") {
             ReservationLessonPage(modifier, navController)
+        }
+
+        // Gestione del parametro dinamico reservationId con authViewModel
+        composable("edit_reservation/{reservationId}") { backStackEntry ->
+            val reservationId = backStackEntry.arguments?.getString("reservationId")
+            if (reservationId != null) {
+                EditReservationPage(reservationId = reservationId, navController = navController, authViewModel = authViewModel)
+            }
         }
     }
 }
