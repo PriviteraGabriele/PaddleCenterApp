@@ -5,8 +5,10 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.CalendarMonth
 import androidx.compose.material3.*
@@ -46,6 +48,11 @@ fun ProfilePage(
     var birthDate by remember { mutableStateOf("") }
     var gender by remember { mutableStateOf("") }
     var profileImageUri by remember { mutableStateOf<Uri?>(null) }
+    var bio by remember { mutableStateOf("") }  // Aggiunto per la bio
+    var ranking by remember { mutableStateOf("") }  // Aggiunto per il rank
+
+    // Stato per la modalità di modifica
+    var isEditing by remember { mutableStateOf(false) }
 
     // Recupera i dati aggiuntivi da Firebase Realtime Database se l'utente è loggato
     LaunchedEffect(currentUser) {
@@ -57,6 +64,8 @@ fun ProfilePage(
                     birthDate = user.birthDate
                     gender = user.gender
                     profileImageUri = user.profileImageUrl?.let { Uri.parse(it) }
+                    bio = user.bio  // Recupera la bio
+                    ranking = user.ranking // Recupera il rank
                 }
             }
         }
@@ -65,9 +74,7 @@ fun ProfilePage(
     // Launcher per selezionare una nuova immagine
     val launcher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.GetContent()
-    ) { uri: Uri? ->
-        profileImageUri = uri
-    }
+    ) { uri: Uri? -> profileImageUri = uri }
 
     val context = LocalContext.current
     val calendar = Calendar.getInstance()
@@ -91,10 +98,13 @@ fun ProfilePage(
             )
         }
     ) { contentPadding ->
+        // Aggiunta scrollabilità con verticalScroll
         Column(
             modifier = modifier
                 .fillMaxSize()
-                .padding(contentPadding),
+                .padding(contentPadding)
+                .verticalScroll(enabled = true, state = rememberScrollState()) // Scroll abilita
+                .padding(end = 4.dp), // Aggiungi padding per la scrollbar
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             Text(text = "Profile Page", fontSize = 32.sp)
@@ -108,15 +118,32 @@ fun ProfilePage(
                 ProfileImage(profileImageUri = profileImageUri)
             }
 
-            TextButton(onClick = { launcher.launch("image/*") }) {
-                Text(text = "Change Profile Picture")
-            }
+            // Mostra dati di default (foto, bio, rank)
+            if (!isEditing) {
+                Text(text = "Bio: $bio")
+                Text(text = "Rank: $ranking")
+                Spacer(modifier = Modifier.height(18.dp))
 
-            // Sezione per modificare i dati personali
-            Column(
-                verticalArrangement = Arrangement.Center,
-                horizontalAlignment = Alignment.CenterHorizontally
-            ) {
+                // Tasto per entrare in modalità modifica
+                TextButton(onClick = { isEditing = true }) {
+                    Text(text = "Edit Profile")
+                }
+
+                Spacer(modifier = Modifier.height(8.dp))
+
+                TextButton(onClick = {
+                    authViewModel.signout()
+                    navController.navigate("login") { launchSingleTop = true }
+                }) {
+                    Text(text = "Sign out")
+                }
+            } else {
+                TextButton(onClick = { launcher.launch("image/*") }) {
+                    Text(text = "Change Profile Picture")
+                }
+
+                Spacer(modifier = Modifier.height(8.dp))
+
                 OutlinedTextField(
                     value = firstName,
                     onValueChange = { firstName = it },
@@ -148,6 +175,18 @@ fun ProfilePage(
                 )
                 Spacer(modifier = Modifier.height(8.dp))
 
+                OutlinedTextField(
+                    value = bio,
+                    onValueChange = { bio = it },
+                    label = { Text("Bio") },
+                    modifier = Modifier
+                        .widthIn(min = 80.dp, max = 280.dp) // Imposta la larghezza minima e massima
+                        .heightIn(min = 56.dp) // Imposta un'altezza minima, può espandersi
+                        .fillMaxWidth() // Mantiene la larghezza fissa all'interno dei limiti
+                )
+
+                Spacer(modifier = Modifier.height(8.dp))
+
                 // Sezione del genere con RadioButton
                 Text(text = "Gender", fontSize = 18.sp)
                 Row(
@@ -161,26 +200,19 @@ fun ProfilePage(
                         }
                     }
                 }
+
                 Spacer(modifier = Modifier.height(24.dp))
 
                 Button(
                     onClick = {
                         authViewModel.updateProfile(
-                            firstName, lastName, birthDate, gender, profileImageUri
+                            firstName, lastName, birthDate, gender, profileImageUri, bio
                         )
+                        isEditing = false  // Esci dalla modalità di modifica
                     },
                     colors = ButtonDefaults.buttonColors(containerColor = Color.Blue)
                 ) {
                     Text(text = "Save Changes", color = Color.White)
-                }
-
-                Spacer(modifier = Modifier.height(24.dp))
-
-                TextButton(onClick = {
-                    authViewModel.signout()
-                    navController.navigate("login") { launchSingleTop = true }
-                }) {
-                    Text(text = "Sign out")
                 }
             }
         }
@@ -208,3 +240,5 @@ fun ProfileImage(profileImageUri: Uri?, modifier: Modifier = Modifier) {
             .clip(CircleShape)
     )
 }
+
+

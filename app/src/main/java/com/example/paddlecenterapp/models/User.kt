@@ -8,5 +8,7 @@ data class User(
     val gender: String = "",
     val profileImageUrl: String? = null,
     val friends: Map<String, Boolean>? = null,
-    val reports: Map<String, Report>? = null
+    val reports: Map<String, Report>? = null,
+    val bio: String = "",
+    val ranking: String = "",
 )

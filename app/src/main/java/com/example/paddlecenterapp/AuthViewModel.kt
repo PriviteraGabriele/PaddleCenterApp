@@ -112,7 +112,8 @@ class AuthViewModel : ViewModel() {
         lastName: String,
         birthDate: String,
         gender: String,
-        profileImageUri: Uri? = null
+        profileImageUri: Uri? = null,
+        bio: String,
     ) {
         val currentUser = auth.currentUser
         val uid = currentUser?.uid
@@ -136,7 +137,8 @@ class AuthViewModel : ViewModel() {
                                     "firstName" to firstName,
                                     "lastName" to lastName,
                                     "birthDate" to birthDate,
-                                    "gender" to gender
+                                    "gender" to gender,
+                                    "bio" to bio
                                 ).toMutableMap().apply {
                                     // Aggiungi l'immagine del profilo se presente
                                     profileImageUri?.let { this["profileImageUrl"] = it.toString() }
@@ -162,7 +164,6 @@ class AuthViewModel : ViewModel() {
             _authState.value = AuthState.Error("User is not authenticated")
         }
     }
-
 
     // Funzione per il logout
     fun signout() {
