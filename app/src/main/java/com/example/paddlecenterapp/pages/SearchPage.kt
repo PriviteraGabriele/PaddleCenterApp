@@ -10,7 +10,6 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -19,11 +18,11 @@ import com.example.paddlecenterapp.AuthViewModel
 import com.example.paddlecenterapp.models.User
 import com.example.paddlecenterapp.BottomNavigationBar
 import com.example.paddlecenterapp.services.ReportDialog
-import com.example.paddlecenterapp.services.addFriendToCurrentUser
+import com.example.paddlecenterapp.services.addFriendToBothUsers
 import com.example.paddlecenterapp.services.addReport
 import com.example.paddlecenterapp.services.checkFriendship
 import com.example.paddlecenterapp.services.getUserIdByUserObject
-import com.example.paddlecenterapp.services.removeFriendFromCurrentUser
+import com.example.paddlecenterapp.services.removeFriendFromBothUsers
 import kotlinx.coroutines.launch
 import com.example.paddlecenterapp.services.searchUsers
 
@@ -173,7 +172,7 @@ fun UserItem(user: User, snackbarHostState: SnackbarHostState, authViewModel: Au
                     // Aggiungi l'amico
                     getUserIdByUserObject(user) { userId ->
                         if (userId != null) {
-                            addFriendToCurrentUser(userId) { success ->
+                            addFriendToBothUsers(userId) { success ->
                                 coroutineScope.launch {
                                     snackbarMessage = if (success) {
                                         "Friend added successfully!"
@@ -191,7 +190,6 @@ fun UserItem(user: User, snackbarHostState: SnackbarHostState, authViewModel: Au
                     }
                 }
             },
-            colors = ButtonDefaults.buttonColors(containerColor = Color.Blue.copy(alpha = 0.9f)),
             shape = CircleShape,
             modifier = Modifier.size(48.dp),
             contentPadding = PaddingValues(0.dp)
@@ -210,7 +208,7 @@ fun UserItem(user: User, snackbarHostState: SnackbarHostState, authViewModel: Au
                         onClick = {
                             getUserIdByUserObject(user) { userId ->
                                 if (userId != null) {
-                                    removeFriendFromCurrentUser(userId) { success ->
+                                    removeFriendFromBothUsers(userId) { success ->
                                         coroutineScope.launch {
                                             snackbarMessage = if (success) {
                                                 "Friend removed successfully!"
@@ -246,7 +244,7 @@ fun UserItem(user: User, snackbarHostState: SnackbarHostState, authViewModel: Au
 
         Button(
             onClick = { showDialogReport = true },
-            colors = ButtonDefaults.buttonColors(containerColor = Color.Red.copy(alpha = 0.8f)),
+            colors = ButtonDefaults.buttonColors(MaterialTheme.colorScheme.error),
             shape = CircleShape,
             modifier = Modifier.size(48.dp),
             contentPadding = PaddingValues(0.dp)

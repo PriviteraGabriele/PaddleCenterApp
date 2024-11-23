@@ -20,6 +20,8 @@ import com.example.paddlecenterapp.services.searchUsers
 import com.google.firebase.database.*
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
+import java.time.LocalDateTime
+import java.time.format.DateTimeFormatter
 
 @Composable
 fun ReservationFieldPage(
@@ -64,13 +66,34 @@ fun ReservationFieldPage(
 
     // Fetch fields data from Firebase
     LaunchedEffect(Unit) {
-        database.child("fields").get().addOnSuccessListener {
-            val fieldMap = it.getValue<Map<String, Map<String, Any>>>()
+        database.child("fields").get().addOnSuccessListener { snapshot ->
+            val now = LocalDateTime.now()
+            val formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm")
+
+            val fieldMap = snapshot.getValue<Map<String, Map<String, Any>>>()
             if (fieldMap != null) {
                 val fieldList = fieldMap.map { (key, value) ->
-                    val availability = (value["availability"] as Map<String, Map<String, Any>>).mapValues { entry ->
-                        Slot(entry.value["date"] as String, entry.value["status"] as Boolean)
-                    }
+                    // Recupera gli slot disponibili e filtra quelli validi
+                    val availability = (value["availability"] as Map<String, Map<String, Any>>).mapNotNull { entry ->
+                        val date = entry.value["date"] as? String
+                        val status = entry.value["status"] as? Boolean ?: false
+
+                        if (date != null && status) {
+                            val slotDate = LocalDateTime.parse(date, formatter)
+                            if (slotDate.isAfter(now)) {
+                                entry.key to Slot(date, true)
+                            } else {
+                                null
+                            }
+                        } else {
+                            null
+                        }
+                    }.toMap()
+                        .toList()
+                        .sortedBy { LocalDateTime.parse(it.second.date, formatter) } // Ordinamento
+                        .toMap()
+
+                    // Crea l'oggetto Field
                     Field(key, value["name"] as String, availability)
                 }
                 fields = fieldList
