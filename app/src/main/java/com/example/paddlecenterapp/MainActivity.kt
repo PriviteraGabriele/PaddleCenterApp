@@ -25,6 +25,9 @@ import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
 import androidx.core.content.ContextCompat
 import com.example.paddlecenterapp.ui.theme.PaddleCenterAppTheme
+import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.database.FirebaseDatabase
+import com.google.firebase.messaging.FirebaseMessaging
 
 class MainActivity : ComponentActivity() {
 
@@ -71,6 +74,9 @@ class MainActivity : ComponentActivity() {
 
         // Richiedi il permesso di notifica
         askNotificationPermission()
+
+        // Ottieni il token FCM e salvalo nel database
+        getFCMTokenAndSave()
     }
 
     /**
@@ -153,15 +159,43 @@ class MainActivity : ComponentActivity() {
                 Manifest.permission.POST_NOTIFICATIONS
             ) != PackageManager.PERMISSION_GRANTED
         ) {
-            // TODO: Consider calling
-            //    ActivityCompat#requestPermissions
-            // here to request the missing permissions, and then overriding
-            //   public void onRequestPermissionsResult(int requestCode, String[] permissions,
-            //                                          int[] grantResults)
-            // to handle the case where the user grants the permission. See the documentation
-            // for ActivityCompat#requestPermissions for more details.
             return
         }
         notificationManager.notify(1, notificationBuilder.build())  // ID della notifica = 1
+    }
+
+    /**
+     * Ottiene il token FCM e lo salva nel database
+     */
+    private fun getFCMTokenAndSave() {
+        FirebaseMessaging.getInstance().token.addOnCompleteListener { task ->
+            if (!task.isSuccessful) {
+                Log.w("FCM", "Fetching FCM registration token failed", task.exception)
+                return@addOnCompleteListener
+            }
+            val token = task.result
+            Log.d("FCM", "Token FCM: $token")
+
+            // Salva il token nel database
+            saveTokenToDatabase(token)
+        }
+    }
+
+    /**
+     * Salva il token FCM nel database (Firebase Realtime Database)
+     */
+    private fun saveTokenToDatabase(token: String) {
+        val userId = FirebaseAuth.getInstance().currentUser?.uid // ID dell'utente autenticato
+        val databaseReference = FirebaseDatabase.getInstance().getReference("users")
+        userId?.let {
+            databaseReference.child(it).child("fcmToken").setValue(token)
+                .addOnCompleteListener { task ->
+                    if (task.isSuccessful) {
+                        Log.d("FCM", "Token salvato con successo nel database!")
+                    } else {
+                        Log.w("FCM", "Errore nel salvare il token", task.exception)
+                    }
+                }
+        }
     }
 }
