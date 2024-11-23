@@ -13,6 +13,7 @@ import com.example.paddlecenterapp.pages.SearchPage
 import com.example.paddlecenterapp.pages.ProfilePage
 import com.example.paddlecenterapp.pages.ReservationFieldPage
 import com.example.paddlecenterapp.pages.ReservationLessonPage
+import com.example.paddlecenterapp.pages.UserDetailsPage
 
 @Composable
 fun MyAppNavigation(modifier: Modifier = Modifier, authViewModel: AuthViewModel) {
@@ -47,6 +48,11 @@ fun MyAppNavigation(modifier: Modifier = Modifier, authViewModel: AuthViewModel)
             if (reservationId != null) {
                 EditReservationPage(reservationId = reservationId, navController = navController, authViewModel = authViewModel)
             }
+        }
+
+        composable("userDetails/{userId}") { backStackEntry ->
+            val userId = backStackEntry.arguments?.getString("userId") ?: ""
+            UserDetailsPage(modifier, userId = userId, navController = navController, authViewModel = authViewModel)
         }
     }
 }
