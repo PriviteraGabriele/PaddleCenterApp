@@ -2,6 +2,7 @@ package com.example.paddlecenterapp.services
 
 import com.example.paddlecenterapp.AuthViewModel
 import com.example.paddlecenterapp.models.User
+import com.google.android.gms.tasks.Tasks
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.database.*
 import kotlinx.coroutines.tasks.await
@@ -64,16 +65,27 @@ fun getUserIdByUserObject(user: User, callback: (String?) -> Unit) {
         })
 }
 
-// Funzione per aggiungere un amico all'utente autenticato
-fun addFriendToCurrentUser(friendId: String, callback: (Boolean) -> Unit) {
+fun addFriendToBothUsers(friendId: String, callback: (Boolean) -> Unit) {
     val currentUserId = FirebaseAuth.getInstance().currentUser?.uid
     if (currentUserId != null) {
         val databaseRef = FirebaseDatabase.getInstance().getReference("users")
+
+        // Aggiungi l'amico alla lista dell'utente autenticato
+        val currentUserTask = databaseRef
             .child(currentUserId)
             .child("friends")
+            .child(friendId)
+            .setValue(true)
 
-        // Aggiungi l'ID dell'amico sotto "friends"
-        databaseRef.child(friendId).setValue(true)
+        // Aggiungi l'utente autenticato alla lista dell'amico
+        val friendTask = databaseRef
+            .child(friendId)
+            .child("friends")
+            .child(currentUserId)
+            .setValue(true)
+
+        // Esegui entrambe le operazioni e verifica il risultato
+        Tasks.whenAll(currentUserTask, friendTask)
             .addOnCompleteListener { task ->
                 if (task.isSuccessful) {
                     callback(true)
@@ -86,23 +98,30 @@ fun addFriendToCurrentUser(friendId: String, callback: (Boolean) -> Unit) {
     }
 }
 
-fun removeFriendFromCurrentUser(friendId: String, onResult: (Boolean) -> Unit) {
+fun removeFriendFromBothUsers(friendId: String, onResult: (Boolean) -> Unit) {
     val currentUser = FirebaseAuth.getInstance().currentUser
     if (currentUser != null) {
-        val userRef = FirebaseDatabase.getInstance().getReference("users").child(currentUser.uid)
+        val databaseRef = FirebaseDatabase.getInstance().getReference("users")
 
-        // Rimuovi l'ID del nuovo amico dalla lista degli amici
-        userRef.child("friends").child(friendId).removeValue().addOnCompleteListener { task ->
-            if (task.isSuccessful) {
-                // Rimuovi anche il riferimento inverso nella lista dell'amico
-                FirebaseDatabase.getInstance().getReference("users").child(friendId)
-                    .child("friends").child(currentUser.uid).removeValue().addOnCompleteListener { task2 ->
-                        onResult(task2.isSuccessful)
-                    }
-            } else {
-                onResult(false)
+        // Rimuovi l'amico dalla lista degli amici dell'utente corrente
+        val currentUserTask = databaseRef
+            .child(currentUser.uid)
+            .child("friends")
+            .child(friendId)
+            .removeValue()
+
+        // Rimuovi l'utente corrente dalla lista degli amici dell'amico
+        val friendTask = databaseRef
+            .child(friendId)
+            .child("friends")
+            .child(currentUser.uid)
+            .removeValue()
+
+        // Esegui entrambe le operazioni e verifica il risultato
+        Tasks.whenAll(currentUserTask, friendTask)
+            .addOnCompleteListener { task ->
+                onResult(task.isSuccessful)
             }
-        }
     } else {
         onResult(false)
     }
