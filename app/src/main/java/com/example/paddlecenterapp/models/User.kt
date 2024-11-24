@@ -6,7 +6,10 @@ data class User(
     val firstName: String = "",
     val lastName: String = "",
     val gender: String = "",
-    val profileImageUrl: String? = null,
     val friends: Map<String, Boolean>? = null,
-    val reports: Map<String, Report>? = null
+    val reports: Map<String, Report>? = null,
+    val bio: String = "",
+    val ranking: String = "",
+    val admin: Boolean = false,
+    val banned: Boolean = false
 )

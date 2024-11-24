@@ -19,6 +19,9 @@ firebaseAuth = "23.1.0"
 runtimeLivedata = "1.7.5"
 firebaseDatabase = "21.0.0"
 constraintlayoutComposeAndroid = "1.1.0"
+material = "1.12.0"
+firebaseVertexai = "16.0.2"
+coreI18n = "1.0.0-alpha01"
 
 [libraries]
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
@@ -46,6 +49,9 @@ androidx-runtime-livedata = { group = "androidx.compose.runtime", name = "runtim
 firebase-database = { group = "com.google.firebase", name = "firebase-database", version.ref = "firebaseDatabase" }
 androidx-constraintlayout-compose-android = { group = "androidx.constraintlayout", name = "constraintlayout-compose-android", version.ref = "constraintlayoutComposeAndroid" }
 material3 = { module = "androidx.compose.material3:material3", version.ref = "material3" }
+material = { group = "com.google.android.material", name = "material", version.ref = "material" }
+firebase-vertexai = { group = "com.google.firebase", name = "firebase-vertexai", version.ref = "firebaseVertexai" }
+androidx-core-i18n = { group = "androidx.core", name = "core-i18n", version.ref = "coreI18n" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }

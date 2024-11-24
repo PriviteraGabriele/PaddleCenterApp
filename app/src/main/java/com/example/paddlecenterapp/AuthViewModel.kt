@@ -1,6 +1,5 @@
 package com.example.paddlecenterapp
 
-import android.net.Uri
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
@@ -58,12 +57,26 @@ class AuthViewModel : ViewModel() {
         auth.signInWithEmailAndPassword(email, password)
             .addOnCompleteListener { task ->
                 if (task.isSuccessful) {
-                    _authState.value = AuthState.Authenticated
+                    val uid = auth.currentUser?.uid
+                    if (uid != null) {
+                        // Recupera i dati dell'utente dal database
+                        getUserDataFromRealtimeDatabase(uid) { user ->
+                            if (user?.banned == true) {
+                                auth.signOut() // Disconnette l'utente bannato
+                                _authState.value = AuthState.Error("Your account has been banned!")
+                            } else {
+                                _authState.value = AuthState.Authenticated
+                            }
+                        }
+                    } else {
+                        _authState.value = AuthState.Error("User ID not found")
+                    }
                 } else {
                     _authState.value = AuthState.Error(task.exception?.message ?: "Something went wrong")
                 }
             }
     }
+
 
     // Funzione per la registrazione
     fun signup(
@@ -91,7 +104,6 @@ class AuthViewModel : ViewModel() {
                             "lastName" to lastName,
                             "birthDate" to birthDate,
                             "gender" to gender,
-                            "profileImageUrl" to "" // Inizialmente vuoto
                         )
                         database.child("users").child(uid).setValue(userMap)
                             .addOnSuccessListener {
@@ -112,7 +124,7 @@ class AuthViewModel : ViewModel() {
         lastName: String,
         birthDate: String,
         gender: String,
-        profileImageUri: Uri? = null
+        bio: String,
     ) {
         val currentUser = auth.currentUser
         val uid = currentUser?.uid
@@ -136,11 +148,9 @@ class AuthViewModel : ViewModel() {
                                     "firstName" to firstName,
                                     "lastName" to lastName,
                                     "birthDate" to birthDate,
-                                    "gender" to gender
-                                ).toMutableMap().apply {
-                                    // Aggiungi l'immagine del profilo se presente
-                                    profileImageUri?.let { this["profileImageUrl"] = it.toString() }
-                                }
+                                    "gender" to gender,
+                                    "bio" to bio
+                                ).toMutableMap()
 
                                 // Aggiorna i dati nel database
                                 database.child("users").child(uid).updateChildren(userMap)
@@ -162,7 +172,6 @@ class AuthViewModel : ViewModel() {
             _authState.value = AuthState.Error("User is not authenticated")
         }
     }
-
 
     // Funzione per il logout
     fun signout() {
