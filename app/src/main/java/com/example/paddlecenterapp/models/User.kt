@@ -10,4 +10,6 @@ data class User(
     val reports: Map<String, Report>? = null,
     val bio: String = "",
     val ranking: String = "",
+    val admin: Boolean = false,
+    val banned: Boolean = false
 )

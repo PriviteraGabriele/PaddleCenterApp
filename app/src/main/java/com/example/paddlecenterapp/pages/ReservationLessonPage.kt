@@ -23,13 +23,19 @@ import com.example.paddlecenterapp.models.Coach
 import com.example.paddlecenterapp.models.Slot
 import kotlinx.coroutines.launch
 import androidx.compose.material3.Text
+import com.example.paddlecenterapp.AuthViewModel
+import com.example.paddlecenterapp.services.AddAvailabilityButton
+import com.example.paddlecenterapp.services.AddEntityButton
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
 
 @SuppressLint("CoroutineCreationDuringComposition")
 @Composable
-fun ReservationLessonPage(modifier: Modifier = Modifier, navController: NavController) {
+fun ReservationLessonPage(modifier: Modifier = Modifier, navController: NavController, authViewModel: AuthViewModel
+) {
     var selectedItem by remember { mutableIntStateOf(3) }
+    val currentUser = authViewModel.getCurrentUser()
+    var isAdmin by remember { mutableStateOf(false) }
     var coaches by remember { mutableStateOf<List<Coach>>(emptyList()) }
     var selectedCoach by remember { mutableStateOf<Coach?>(null) }
     var selectedSlot by remember { mutableStateOf<Slot?>(null) }
@@ -44,43 +50,60 @@ fun ReservationLessonPage(modifier: Modifier = Modifier, navController: NavContr
     // Coroutine scope to launch coroutines
     val coroutineScope = rememberCoroutineScope()
 
+    // Carica i dati dell'utente autenticato
+    LaunchedEffect(currentUser) {
+        currentUser?.let {
+            authViewModel.getUserDataFromRealtimeDatabase(it.uid) { userData ->
+                if (userData != null) {
+                    isAdmin = userData.admin // Aggiorna lo stato correttamente
+                }
+            }
+        }
+    }
+
     // Fetch coaches data from Firebase
     LaunchedEffect(Unit) {
         database.child("coaches").get().addOnSuccessListener {
             val now = LocalDateTime.now()
             val formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm")
 
+            // Verifica se i dati sono nulli
             val coachMap = it.getValue<Map<String, Map<String, Any>>>()
-            if (coachMap != null) {
-                val coachList = coachMap.map { (key, value) ->
-                    // Filtra gli slot disponibili
-                    val availability = (value["availability"] as Map<String, Map<String, Any>>).mapNotNull { entry ->
-                        val date = entry.value["date"] as? String
-                        val status = entry.value["status"] as? Boolean ?: false
+            if (coachMap == null) {
+                // Se i dati sono nulli, logghiamo un errore e usciamo dalla funzione
+                Log.e("ReservationLessonPage", "Failed to load coaches: Data is null.")
+                return@addOnSuccessListener
+            }
 
-                        if (date != null && status) {
-                            val slotDate = LocalDateTime.parse(date, formatter)
-                            if (slotDate.isAfter(now)) {
-                                entry.key to Slot(date, true)
-                            } else {
-                                null
-                            }
+            // Se i dati sono validi, proseguiamo con il parsing
+            val coachList = coachMap.map { (key, value) ->
+                // Filtra gli slot disponibili
+                val availability = (value["availability"] as? Map<String, Map<String, Any>>)?.mapNotNull { entry ->
+                    val date = entry.value["date"] as? String
+                    val status = entry.value["status"] as? Boolean ?: false
+
+                    if (date != null && status) {
+                        val slotDate = LocalDateTime.parse(date, formatter)
+                        if (slotDate.isAfter(now)) {
+                            entry.key to Slot(date, true)
                         } else {
                             null
                         }
-                    }.toMap()
-                        .toList()
-                        .sortedBy { LocalDateTime.parse(it.second.date, formatter) } // Ordinamento
-                        .toMap()
+                    } else {
+                        null
+                    }
+                }?.toMap()?.toList()?.sortedBy { LocalDateTime.parse(it.second.date, formatter) }?.toMap() ?: emptyMap()
 
-                    Coach(key, value["name"] as String, availability)
-                }
-                coaches = coachList
-            } else {
-                Log.e("ReservationLessonPage", "Failed to load coaches.")
+                Coach(key, value["name"] as? String ?: "Unknown", availability)
             }
+
+            // Aggiorna la lista dei coach
+            coaches = coachList
+        }.addOnFailureListener { exception ->
+            Log.e("ReservationLessonPage", "Failed to load coaches: ${exception.message}")
         }
     }
+
 
     // Function to save reservation and update slot status
     fun saveReservation(coachId: String, slotDate: String) {
@@ -148,6 +171,10 @@ fun ReservationLessonPage(modifier: Modifier = Modifier, navController: NavContr
                         }
                     }
                 }
+
+                if(isAdmin){
+                    AddEntityButton("coach")
+                }
             }
 
             // Show available slots only if a coach is selected
@@ -177,6 +204,10 @@ fun ReservationLessonPage(modifier: Modifier = Modifier, navController: NavContr
                             }
                         }
                     }
+                }
+
+                if(isAdmin){
+                    AddAvailabilityButton(coach.id, "coach")
                 }
             }
 
