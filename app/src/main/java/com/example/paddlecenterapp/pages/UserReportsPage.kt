@@ -46,10 +46,11 @@ import com.example.paddlecenterapp.services.getUserNameAndSurname
 
 @SuppressLint("RememberReturnType")
 @Composable
-fun UserReportsPage(modifier: Modifier = Modifier,
-                    userId: String,
-                    navController: NavController,
-                    authViewModel: AuthViewModel
+fun UserReportsPage(
+    modifier: Modifier = Modifier,
+    userId: String,
+    navController: NavController,
+    authViewModel: AuthViewModel
 ) {
     var selectedItem by remember { mutableIntStateOf(2) }
     val snackbarHostState = remember { SnackbarHostState() }
@@ -57,10 +58,10 @@ fun UserReportsPage(modifier: Modifier = Modifier,
     var reports by remember { mutableStateOf<Map<String, Report>?>(null) }
     var userName by remember { mutableStateOf<String?>(null) }
     var reporterNames by remember { mutableStateOf<Map<String, String>>(emptyMap()) }
-    var isDataReady by remember { mutableStateOf(false) }  // Stato per indicare che i dati sono pronti
+    var isDataReady by remember { mutableStateOf(false) } // Stato per indicare che i dati sono pronti
 
-    LaunchedEffect(userId) {
-        // Recupero i dati dell'utente e i suoi report
+    // Funzione lambda per ricaricare i dati
+    val fetchData: () -> Unit = {
         authViewModel.getUserDataFromRealtimeDatabase(userId) { retrievedUser ->
             if (retrievedUser != null) {
                 user = retrievedUser
@@ -85,14 +86,12 @@ fun UserReportsPage(modifier: Modifier = Modifier,
                         } else {
                             reporterMap[report.reportedById] = "Unknown"
                         }
-                        // Log per ogni reporter
-                        Log.d("UserReportsPage", "Reporter for ${report.reportedById}: ${reporterMap[report.reportedById]}")
 
                         // Incrementa il contatore per verificare quando tutti i reporter sono stati caricati
                         reportersLoaded++
                         if (reportersLoaded == reports?.size) {
                             reporterNames = reporterMap
-                            isDataReady = true  // Imposta isDataReady a true quando i dati sono pronti
+                            isDataReady = true // Imposta isDataReady a true quando i dati sono pronti
                         }
                     }
                 }
@@ -100,6 +99,11 @@ fun UserReportsPage(modifier: Modifier = Modifier,
                 Log.e("UserReportsPage", "Error retrieving user data")
             }
         }
+    }
+
+    // Inizializza i dati quando il composable viene caricato
+    LaunchedEffect(userId) {
+        fetchData()
     }
 
     Scaffold(
@@ -128,34 +132,35 @@ fun UserReportsPage(modifier: Modifier = Modifier,
 
             Text(text = "List of $userName's reports:", fontSize = 20.sp)
 
-            // Se reports è null o vuoto, mostriamo un messaggio alternativo
             if (reports.isNullOrEmpty()) {
                 Spacer(modifier = Modifier.height(24.dp))
-
                 Text(text = "There are no reports.", color = Color.Red)
             } else if (!isDataReady) {
                 Spacer(modifier = Modifier.height(24.dp))
-
-                // Mostra un messaggio di caricamento finché i dati non sono pronti
                 Text(text = "Loading reporter names...")
             } else {
                 Spacer(modifier = Modifier.height(12.dp))
-
                 LazyColumn {
                     items(reports?.entries?.toList() ?: emptyList()) { (reportId, report) ->
-                        ReportItem(userId = userId, reportId = reportId, report = report, reporterNames = reporterNames) {
-                            // Azione dopo che il report è stato cancellato
-                        }
+                        ReportItem(
+                            userId = userId,
+                            reportId = reportId,
+                            report = report,
+                            reporterNames = reporterNames,
+                            onDeleteSuccess = {
+                                // Ricarica i dati dopo la cancellazione del report
+                                fetchData()
+                            }
+                        )
                     }
                 }
-
             }
         }
     }
 }
 
 @Composable
-fun ReportItem(userId: String, reportId: String,report: Report, reporterNames: Map<String, String>, onDeleteSuccess: () -> Unit) {
+fun ReportItem(userId: String, reportId: String, report: Report, reporterNames: Map<String, String>, onDeleteSuccess: () -> Unit) {
     val context = LocalContext.current
     val reporterName = reporterNames[report.reportedById] ?: "Unknown"
 
@@ -179,7 +184,7 @@ fun ReportItem(userId: String, reportId: String,report: Report, reporterNames: M
                 Button(
                     onClick = {
                         deleteReport(context, userId, reportId)
-                        onDeleteSuccess()
+                        onDeleteSuccess()  // Richiama il callback per ricaricare i dati
                     },
                     colors = ButtonDefaults.buttonColors(MaterialTheme.colorScheme.error),
                     modifier = Modifier.weight(1f)
