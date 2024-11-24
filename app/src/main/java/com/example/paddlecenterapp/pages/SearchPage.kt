@@ -73,7 +73,7 @@ fun SearchPage(modifier: Modifier = Modifier, navController: NavController, auth
                 verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 items(users) { user ->
-                    UserItem(user, snackbarHostState, authViewModel, navController)
+                    UserItem(user, navController)
                 }
             }
         }
@@ -81,7 +81,7 @@ fun SearchPage(modifier: Modifier = Modifier, navController: NavController, auth
 }
 
 @Composable
-fun UserItem(user: User, snackbarHostState: SnackbarHostState, authViewModel: AuthViewModel, navController: NavController) {
+fun UserItem(user: User, navController: NavController) {
     var userIdd by remember { mutableStateOf("") }
 
     // Recupera l'ID dell'utente cercato

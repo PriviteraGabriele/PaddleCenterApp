@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
@@ -37,7 +38,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -54,27 +54,58 @@ import com.example.paddlecenterapp.services.getUserIdByUserObject
 import com.example.paddlecenterapp.services.removeFriendFromBothUsers
 import kotlinx.coroutines.launch
 import androidx.compose.runtime.*
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
+import com.example.paddlecenterapp.services.banUser
+import com.example.paddlecenterapp.services.checkFriendship
+import com.example.paddlecenterapp.services.unbanUser
 
 @SuppressLint("UnusedMaterial3ScaffoldPaddingParameter")
 @Composable
-fun UserDetailsPage(modifier: Modifier = Modifier, userId: String, navController: NavController, authViewModel: AuthViewModel) {
+fun UserDetailsPage(
+    modifier: Modifier = Modifier,
+    userId: String,
+    navController: NavController,
+    authViewModel: AuthViewModel
+) {
     var selectedItem by remember { mutableIntStateOf(2) }
-    val context = LocalContext.current
     val currentUser = authViewModel.getCurrentUser()
 
-    // Stato per il testo del bottone (aggiungi o rimuovi amico)
+    // Stato per controllare se l'utente è admin
+    var isAdmin by remember { mutableStateOf(false) }
     var buttonText by remember { mutableStateOf("Add Friend") }
     var showDialogFriend by remember { mutableStateOf(false) }
     var showDialogReport by remember { mutableStateOf(false) }
     var user by remember { mutableStateOf<User?>(null) }
-
-    // Snackbar per messaggi di conferma
     val snackbarHostState = remember { SnackbarHostState() }
     val coroutineScope = rememberCoroutineScope()
+    val context = LocalContext.current
+    val friends = remember { mutableStateOf<Map<String, Boolean>>(emptyMap()) }
+
+    // Stato per controllare il messaggio del Snackbar
+    var snackbarMessage by remember { mutableStateOf<String?>(null) }
+
+    // Mostra Snackbar quando `snackbarMessage` viene impostato
+    snackbarMessage?.let { message ->
+        LaunchedEffect(message) {
+            snackbarHostState.showSnackbar(message)
+            snackbarMessage = null // Reset del messaggio dopo la visualizzazione
+        }
+    }
+
+    // Carica i dati dell'utente autenticato
+    LaunchedEffect(currentUser) {
+        currentUser?.let {
+            authViewModel.getUserDataFromRealtimeDatabase(it.uid) { userData ->
+                if (userData != null) {
+                    isAdmin = userData.admin // Aggiorna lo stato correttamente
+                }
+            }
+        }
+    }
 
     // Ottieni i dati dell'utente tramite l'ID passato
     LaunchedEffect(userId) {
-        // Assumiamo che `authViewModel.getUserDataFromRealtimeDatabase` ritorni i dati dell'utente per il `userId` fornito
         authViewModel.getUserDataFromRealtimeDatabase(userId) { retrievedUser ->
             if (retrievedUser != null) {
                 user = retrievedUser
@@ -83,6 +114,33 @@ fun UserDetailsPage(modifier: Modifier = Modifier, userId: String, navController
             }
         }
     }
+
+    LaunchedEffect(currentUser, userId) {
+        if (currentUser != null) {
+            Log.d("FriendshipCheck", "MainUser: ${currentUser.uid}")
+            authViewModel.getUserDataFromRealtimeDatabase(currentUser.uid) { cUser ->
+                if (cUser != null) {
+                    cUser.friends?.let {
+                        // Log per monitorare gli amici dell'utente
+                        Log.d("FriendshipCheck", "MainUser friends: $it")
+                        friends.value = it
+
+                        // Log per monitorare l'ID dell'utente cercato
+                        Log.d("FriendshipCheck", "User ID of searched user: $userId")
+
+                        // Verifica se sono amici
+                        checkFriendship(userId, it) { isFriend ->
+                            // Log per monitorare se gli utenti sono amici
+                            Log.d("FriendshipCheck", "Are they friends? $isFriend")
+
+                            buttonText = if (isFriend) "Remove Friend" else "Add Friend"
+                        }
+                    }
+                }
+            }
+        }
+    }
+
 
     // Funzione per mostrare la Snackbar
     fun showSnackbar(message: String) {
@@ -101,11 +159,12 @@ fun UserDetailsPage(modifier: Modifier = Modifier, userId: String, navController
         },
         snackbarHost = { SnackbarHost(hostState = snackbarHostState) }
     ) { contentPadding ->
-        Column( modifier = modifier
-            .fillMaxSize()
-            .padding(contentPadding)
-            .verticalScroll(enabled = true, state = rememberScrollState()) // Scroll abilita
-            .padding(end = 4.dp), // Aggiungi padding per la scrollbar
+        Column(
+            modifier = modifier
+                .fillMaxSize()
+                .padding(contentPadding)
+                .verticalScroll(enabled = true, state = rememberScrollState())
+                .padding(end = 4.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             Text(
@@ -115,23 +174,24 @@ fun UserDetailsPage(modifier: Modifier = Modifier, userId: String, navController
                 modifier = Modifier.padding(bottom = 16.dp)
             )
 
+            // Mostra i dettagli utente
             Box(
                 contentAlignment = Alignment.Center,
                 modifier = Modifier
-                    .size(120.dp) // Aumentata la dimensione per un look più prominente
+                    .size(120.dp)
                     .background(
                         color = MaterialTheme.colorScheme.primaryContainer,
                         shape = CircleShape
                     )
-                    .padding(6.dp) // Maggiore spaziatura per l'immagine
+                    .padding(6.dp)
             ) {
                 Image(
-                    painter = painterResource(id = R.drawable.profile_picture), // Usa l'immagine caricata
+                    painter = painterResource(id = R.drawable.profile_picture),
                     contentDescription = "Profile Picture",
                     modifier = Modifier
-                        .size(110.dp) // Aggiusta la dimensione dell'immagine
-                        .clip(CircleShape), // Ritaglia l'immagine a forma di cerchio
-                    contentScale = ContentScale.Crop // Adatta l'immagine al contenitore
+                        .size(110.dp)
+                        .clip(CircleShape),
+                    contentScale = ContentScale.Crop
                 )
             }
 
@@ -143,6 +203,23 @@ fun UserDetailsPage(modifier: Modifier = Modifier, userId: String, navController
 
             var bio = user?.bio ?: ""
             var ranking = user?.ranking ?: ""
+            var banned = user?.banned
+
+            if (isAdmin){
+                if (banned == true){
+                    Spacer(modifier = Modifier.height(8.dp))
+
+                    Text(
+                        text = "[Banned]",
+                        fontSize = 22.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = Color.Red // Imposta il colore del testo
+                    )
+
+                    Spacer(modifier = Modifier.height(8.dp))
+                }
+
+            }
 
             OutlinedTextField(
                 value = bio,
@@ -167,57 +244,37 @@ fun UserDetailsPage(modifier: Modifier = Modifier, userId: String, navController
             Spacer(modifier = Modifier.height(16.dp))
 
             // Bottone Aggiungi/Rimuovi Amico
-            Button(onClick = {
-                if (buttonText == "Remove Friend") {
-                    // Mostra il dialog per rimuovere l'amico
-                    showDialogFriend = true
-                } else {
-                    // Aggiungi l'amico
-                    getUserIdByUserObject(user!!) { userId ->
-                        if (userId != null) {
-                            addFriendToBothUsers(userId) { success ->
-                                showSnackbar(
-                                    if (success) "Friend added successfully!" else "Error adding friend"
-                                )
-                                buttonText = "Remove Friend"  // Cambia il testo del bottone per indicare che sono amici
+            Button(
+                onClick = {
+                    if (buttonText == "Remove Friend") {
+                        // Mostra il dialog per rimuovere l'amico
+                        showDialogFriend = true
+                    } else {
+                        // Aggiungi l'amico
+                        user?.let {
+                            getUserIdByUserObject(it) { userId ->
+                                if (userId != null) {
+                                    addFriendToBothUsers(userId) { success ->
+                                        coroutineScope.launch {
+                                            snackbarMessage = if (success) {
+                                                "Friend added successfully!"
+                                            } else {
+                                                "Error in adding friend."
+                                            }
+                                        }
+                                        buttonText = "Remove Friend"  // Cambia il testo del bottone per indicare che sono amici
+                                    }
+                                } else {
+                                    coroutineScope.launch {
+                                        snackbarMessage = "User not found."
+                                    }
+                                }
                             }
                         }
                     }
                 }
-            }) {
-                Text(buttonText)
-            }
-
-            Spacer(modifier = Modifier.height(8.dp))
-
-            // Bottone per segnalare l'utente
-            Button(
-                onClick = { showDialogReport = true },
-                colors = ButtonDefaults.buttonColors(MaterialTheme.colorScheme.error)
             ) {
-                Text("Report")
-            }
-
-            // Mostra il dialog per il report
-            if (showDialogReport) {
-                ReportDialog(
-                    onDismiss = { showDialogReport = false },
-                    onReport = { reason ->
-                        // Gestisci la segnalazione
-                        getUserIdByUserObject(user!!) { reportedUserId ->
-                            val reportedById = currentUser?.uid ?: ""
-                            if (reportedUserId != null && reportedById.isNotEmpty()) {
-                                addReport(
-                                    context = context,
-                                    reportedUserId = reportedUserId,
-                                    reportedById = reportedById,
-                                    reason = reason
-                                )
-                                showSnackbar("Report submitted successfully!")
-                            }
-                        }
-                    }
-                )
+                Text(buttonText)
             }
 
             // Dialog per confermare la rimozione dell'amico
@@ -227,19 +284,32 @@ fun UserDetailsPage(modifier: Modifier = Modifier, userId: String, navController
                     title = { Text("Remove Friend") },
                     text = { Text("Are you sure you want to remove this friend?") },
                     confirmButton = {
-                        Button(onClick = {
-                            getUserIdByUserObject(user!!) { userId ->
-                                if (userId != null) {
-                                    removeFriendFromBothUsers(userId) { success ->
-                                        showSnackbar(
-                                            if (success) "Friend removed successfully!" else "Error removing friend"
-                                        )
-                                        buttonText = "Add Friend"  // Cambia il testo del bottone per indicare che non sono più amici
+                        Button(
+                            onClick = {
+                                user?.let {
+                                    getUserIdByUserObject(it) { userId ->
+                                        if (userId != null) {
+                                            removeFriendFromBothUsers(userId) { success ->
+                                                coroutineScope.launch {
+                                                    snackbarMessage = if (success) {
+                                                        "Friend removed successfully!"
+                                                    } else {
+                                                        "Error in removing friend."
+                                                    }
+                                                }
+                                                buttonText =
+                                                    "Add Friend"  // Cambia il testo del bottone per indicare che non sono più amici
+                                            }
+                                        } else {
+                                            coroutineScope.launch {
+                                                snackbarMessage = "User not found."
+                                            }
+                                        }
                                     }
                                 }
+                                showDialogFriend = false
                             }
-                            showDialogFriend = false
-                        }) {
+                        ) {
                             Text("Yes")
                         }
                     },
@@ -249,6 +319,80 @@ fun UserDetailsPage(modifier: Modifier = Modifier, userId: String, navController
                         }
                     }
                 )
+            }
+
+            Spacer(modifier = Modifier.height(8.dp))
+
+            Button(
+                onClick = { showDialogReport = true },
+                colors = ButtonDefaults.buttonColors(MaterialTheme.colorScheme.error)
+            ) {
+                Text("Report User")
+            }
+
+            Spacer(modifier = Modifier.width(8.dp)) // Aggiungi uno spazio tra i due pulsanti
+
+            if (showDialogReport) {
+                ReportDialog(
+                    onDismiss = { showDialogReport = false },
+                    onReport = { reason ->
+                        // Ottenere l'ID dell'utente che segnala e dell'utente segnalato
+                        user?.let {
+                            getUserIdByUserObject(it) { reportedUserId ->
+                                val reportedById = currentUser?.uid ?: ""
+
+                                if (reportedUserId != null && reportedById.isNotEmpty()) {
+                                    addReport(
+                                        context = context,
+                                        reportedUserId = reportedUserId,
+                                        reportedById = reportedById,
+                                        reason = reason
+                                    )
+                                }
+                            }
+                        }
+                    }
+                )
+            }
+
+            // Mostra pulsanti solo se l'utente è admin
+            if (isAdmin) {
+                Spacer(modifier = Modifier.height(16.dp))
+
+                Button(onClick = {
+                    // Mostra i report dell'utente
+                    //navController.navigate("UserReports/$userId")
+                }) {
+                    Text("View Reports")
+                }
+
+                Spacer(modifier = Modifier.height(8.dp))
+
+                Button(onClick = {
+                    if (banned == true) {
+                        // Gestisci l'unban dell'utente
+                        unbanUser(userId) { success ->
+                            if (success) {
+                                banned = false
+                                showSnackbar("User unbanned successfully!")
+                            } else {
+                                showSnackbar("Error unbanning user")
+                            }
+                        }
+                    } else {
+                        // Gestisci il ban dell'utente
+                        banUser(userId) { success ->
+                            if (success) {
+                                banned = true
+                                showSnackbar("User banned successfully!")
+                            } else {
+                                showSnackbar("Error banning user")
+                            }
+                        }
+                    }
+                }) {
+                    Text(if (banned == true) "Unban User" else "Ban User")
+                }
             }
         }
     }
