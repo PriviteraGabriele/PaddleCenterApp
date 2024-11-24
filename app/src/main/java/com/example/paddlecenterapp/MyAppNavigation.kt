@@ -40,7 +40,7 @@ fun MyAppNavigation(modifier: Modifier = Modifier, authViewModel: AuthViewModel)
             ProfilePage(modifier, navController, authViewModel)
         }
         composable("reservation_lesson") {
-            ReservationLessonPage(modifier, navController)
+            ReservationLessonPage(modifier, navController, authViewModel)
         }
 
         // Gestione del parametro dinamico reservationId con authViewModel
