@@ -57,12 +57,26 @@ class AuthViewModel : ViewModel() {
         auth.signInWithEmailAndPassword(email, password)
             .addOnCompleteListener { task ->
                 if (task.isSuccessful) {
-                    _authState.value = AuthState.Authenticated
+                    val uid = auth.currentUser?.uid
+                    if (uid != null) {
+                        // Recupera i dati dell'utente dal database
+                        getUserDataFromRealtimeDatabase(uid) { user ->
+                            if (user?.banned == true) {
+                                auth.signOut() // Disconnette l'utente bannato
+                                _authState.value = AuthState.Error("Your account has been banned!")
+                            } else {
+                                _authState.value = AuthState.Authenticated
+                            }
+                        }
+                    } else {
+                        _authState.value = AuthState.Error("User ID not found")
+                    }
                 } else {
                     _authState.value = AuthState.Error(task.exception?.message ?: "Something went wrong")
                 }
             }
     }
+
 
     // Funzione per la registrazione
     fun signup(
