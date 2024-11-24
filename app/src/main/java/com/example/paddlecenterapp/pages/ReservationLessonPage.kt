@@ -25,7 +25,7 @@ import kotlinx.coroutines.launch
 import androidx.compose.material3.Text
 import com.example.paddlecenterapp.AuthViewModel
 import com.example.paddlecenterapp.services.AddAvailabilityButton
-import com.example.paddlecenterapp.services.AddCoachButton
+import com.example.paddlecenterapp.services.AddEntityButton
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
 
@@ -61,7 +61,6 @@ fun ReservationLessonPage(modifier: Modifier = Modifier, navController: NavContr
         }
     }
 
-    // Fetch coaches data from Firebase
     // Fetch coaches data from Firebase
     LaunchedEffect(Unit) {
         database.child("coaches").get().addOnSuccessListener {
@@ -174,7 +173,7 @@ fun ReservationLessonPage(modifier: Modifier = Modifier, navController: NavContr
                 }
 
                 if(isAdmin){
-                    AddCoachButton()
+                    AddEntityButton("coach")
                 }
             }
 
@@ -208,7 +207,7 @@ fun ReservationLessonPage(modifier: Modifier = Modifier, navController: NavContr
                 }
 
                 if(isAdmin){
-                    AddAvailabilityButton(coach.id)
+                    AddAvailabilityButton(coach.id, "coach")
                 }
             }
 

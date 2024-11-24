@@ -1,5 +1,6 @@
 package com.example.paddlecenterapp.pages
 
+import android.util.Log
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -15,6 +16,8 @@ import com.example.paddlecenterapp.BottomNavigationBar
 import com.example.paddlecenterapp.models.Field
 import com.example.paddlecenterapp.models.Slot
 import com.example.paddlecenterapp.models.User
+import com.example.paddlecenterapp.services.AddAvailabilityButton
+import com.example.paddlecenterapp.services.AddEntityButton
 import com.example.paddlecenterapp.services.getUserIdByUserObject
 import com.example.paddlecenterapp.services.searchUsers
 import com.google.firebase.database.*
@@ -30,6 +33,7 @@ fun ReservationFieldPage(
     authViewModel: AuthViewModel
 ) {
     var selectedItem by remember { mutableIntStateOf(1) }
+    var isAdmin by remember { mutableStateOf(false) }
     var fields by remember { mutableStateOf<List<Field>>(emptyList()) }
     var selectedField by remember { mutableStateOf<Field?>(null) }
     var selectedSlot by remember { mutableStateOf<Slot?>(null) }
@@ -60,44 +64,54 @@ fun ReservationFieldPage(
                         this[0] = userFullName to currentUser.uid
                     }
                 }
+
+                if (user != null) {
+                    isAdmin = user.admin // Aggiorna lo stato correttamente
+                }
             }
         }
     }
 
     // Fetch fields data from Firebase
     LaunchedEffect(Unit) {
-        database.child("fields").get().addOnSuccessListener { snapshot ->
+        database.child("fields").get().addOnSuccessListener {
             val now = LocalDateTime.now()
             val formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm")
 
-            val fieldMap = snapshot.getValue<Map<String, Map<String, Any>>>()
-            if (fieldMap != null) {
-                val fieldList = fieldMap.map { (key, value) ->
-                    // Recupera gli slot disponibili e filtra quelli validi
-                    val availability = (value["availability"] as Map<String, Map<String, Any>>).mapNotNull { entry ->
-                        val date = entry.value["date"] as? String
-                        val status = entry.value["status"] as? Boolean ?: false
+            // Verifica se i dati sono nulli
+            val fieldMap = it.getValue<Map<String, Map<String, Any>>>()
+            if (fieldMap == null) {
+                // Se i dati sono nulli, logghiamo un errore e usciamo dalla funzione
+                Log.e("ReservationFieldPage", "Failed to load fields: Data is null.")
+                return@addOnSuccessListener
+            }
 
-                        if (date != null && status) {
-                            val slotDate = LocalDateTime.parse(date, formatter)
-                            if (slotDate.isAfter(now)) {
-                                entry.key to Slot(date, true)
-                            } else {
-                                null
-                            }
+            // Se i dati sono validi, proseguiamo con il parsing
+            val fieldList = fieldMap.map { (key, value) ->
+                // Filtra gli slot disponibili
+                val availability = (value["availability"] as? Map<String, Map<String, Any>>)?.mapNotNull { entry ->
+                    val date = entry.value["date"] as? String
+                    val status = entry.value["status"] as? Boolean ?: false
+
+                    if (date != null && status) {
+                        val slotDate = LocalDateTime.parse(date, formatter)
+                        if (slotDate.isAfter(now)) {
+                            entry.key to Slot(date, true)
                         } else {
                             null
                         }
-                    }.toMap()
-                        .toList()
-                        .sortedBy { LocalDateTime.parse(it.second.date, formatter) } // Ordinamento
-                        .toMap()
+                    } else {
+                        null
+                    }
+                }?.toMap()?.toList()?.sortedBy { LocalDateTime.parse(it.second.date, formatter) }?.toMap() ?: emptyMap()
 
-                    // Crea l'oggetto Field
-                    Field(key, value["name"] as String, availability)
-                }
-                fields = fieldList
+                Field(key, value["name"] as? String ?: "Unknown", availability)
             }
+
+            // Aggiorna la lista dei campi
+            fields = fieldList
+        }.addOnFailureListener { exception ->
+            Log.e("ReservationFieldPage", "Failed to load fields: ${exception.message}")
         }
     }
 
@@ -133,6 +147,10 @@ fun ReservationFieldPage(
                         }
                     }
                 }
+
+                if(isAdmin){
+                    AddEntityButton("field")
+                }
             }
 
             selectedField?.let { field ->
@@ -165,6 +183,10 @@ fun ReservationFieldPage(
                             }
                         }
                     }
+                }
+
+                if(isAdmin){
+                    AddAvailabilityButton(field.id, "field")
                 }
 
                 selectedSlot?.let {

@@ -50,9 +50,9 @@ fun unbanUser(bannedUserId: String, onComplete: (Boolean) -> Unit) {
 }
 
 @Composable
-fun AddCoachButton() {
+fun AddEntityButton(dbType: String) {
     var showDialog by remember { mutableStateOf(false) }
-    var coachName by remember { mutableStateOf("") }
+    var entityName by remember { mutableStateOf("") }
     val context = LocalContext.current
     val database = Firebase.database.reference
 
@@ -61,21 +61,21 @@ fun AddCoachButton() {
         modifier = Modifier.padding(8.dp),
         colors = ButtonDefaults.buttonColors(MaterialTheme.colorScheme.errorContainer)
     ) {
-        Text("Add new coach")
+        Text("Add new $dbType")
     }
 
     if (showDialog) {
         AlertDialog(
             onDismissRequest = { showDialog = false },
-            title = { Text("Add New Coach") },
+            title = { Text("Add New $dbType") },
             text = {
                 Column {
-                    Text("Enter the name of the coach:")
+                    Text("Enter the name of the $dbType:")
                     Spacer(modifier = Modifier.height(8.dp))
                     TextField(
-                        value = coachName,
-                        onValueChange = { coachName = it },
-                        placeholder = { Text("Coach Name") },
+                        value = entityName,
+                        onValueChange = { entityName = it },
+                        placeholder = { Text("${dbType.capitalize()} Name") },
                         singleLine = true
                     )
                 }
@@ -83,24 +83,28 @@ fun AddCoachButton() {
             confirmButton = {
                 Button(
                     onClick = {
-                        if (coachName.isNotBlank()) {
-                            // Genera un nuovo nodo con ID univoco
-                            val newCoachRef = database.child("coaches").push()
-                            val coachId = newCoachRef.key ?: ""
+                        if (entityName.isNotBlank()) {
+                            // Genera un nuovo nodo con ID univoco basato su dbType
+                            val newEntityRef = if (dbType == "coach") {
+                                database.child("coaches").push() // Se è coach
+                            } else {
+                                database.child("fields").push() // Se è field
+                            }
+                            val entityId = newEntityRef.key ?: ""
 
-                            // Struttura del coach con nome e ID
-                            val newCoach = mapOf(
-                                "name" to coachName,
-                                "id" to coachId
+                            // Struttura dell'entità con nome e ID
+                            val newEntity = mapOf(
+                                "name" to entityName,
+                                "id" to entityId
                             )
 
-                            // Salva il nuovo coach nel database
-                            newCoachRef.setValue(newCoach)
+                            // Salva l'entità nel database
+                            newEntityRef.setValue(newEntity)
                                 .addOnSuccessListener {
                                     // Mostra un Toast per il successo
                                     Toast.makeText(
                                         context,
-                                        "Coach created successfully!",
+                                        "$dbType created successfully!",
                                         Toast.LENGTH_SHORT
                                     ).show()
                                 }
@@ -108,7 +112,7 @@ fun AddCoachButton() {
                                     // Mostra un Toast per il fallimento
                                     Toast.makeText(
                                         context,
-                                        "Failed to create coach: ${exception.message}",
+                                        "Failed to create $dbType: ${exception.message}",
                                         Toast.LENGTH_SHORT
                                     ).show()
                                 }
@@ -116,12 +120,12 @@ fun AddCoachButton() {
                             // Mostra un Toast se il nome è vuoto
                             Toast.makeText(
                                 context,
-                                "Coach name cannot be empty!",
+                                "$dbType name cannot be empty!",
                                 Toast.LENGTH_SHORT
                             ).show()
                         }
                         showDialog = false
-                        coachName = ""
+                        entityName = ""
                     }
                 ) {
                     Text("Save")
@@ -136,8 +140,9 @@ fun AddCoachButton() {
     }
 }
 
+
 @Composable
-fun AddAvailabilityButton(coachId: String) {
+fun AddAvailabilityButton(id: String, dbType: String) {
     var showDialog by remember { mutableStateOf(false) }
     var selectedDateTime by remember { mutableStateOf("") }
     var errorMessage by remember { mutableStateOf("") }
@@ -192,10 +197,19 @@ fun AddAvailabilityButton(coachId: String) {
                                 errorMessage = "The date cannot be in the past."
                             } else {
                                 // Valid date and time, save it to the database
-                                val newSlotRef = database.child("coaches")
-                                    .child(coachId)
-                                    .child("availability")
-                                    .push() // Generate a unique ID for the slot
+                                val newSlotRef = if (dbType == "coach") {
+                                    // Use the "coaches" path for coach
+                                    database.child("coaches")
+                                        .child(id)
+                                        .child("availability")
+                                        .push() // Generate a unique ID for the slot
+                                } else {
+                                    // Use the "fields" path for field
+                                    database.child("fields")
+                                        .child(id)
+                                        .child("availability")
+                                        .push() // Generate a unique ID for the slot
+                                }
 
                                 // Structure for the availability slot
                                 val newSlot = mapOf(
