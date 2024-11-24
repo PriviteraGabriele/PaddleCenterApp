@@ -22,6 +22,7 @@ import com.example.paddlecenterapp.models.Reservation
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Delete
+import com.example.paddlecenterapp.services.getUserNameAndSurname
 
 @Composable
 fun HomePage(modifier: Modifier = Modifier, navController: NavController) {
@@ -261,24 +262,6 @@ fun fetchReservations(
             // Handle error
         }
     })
-}
-
-fun getUserNameAndSurname(userId: String, callback: (String?, String?) -> Unit) {
-    val database = FirebaseDatabase.getInstance()
-    val usersRef = database.reference.child("users")
-    val userRef = usersRef.child(userId)
-
-    userRef.get().addOnSuccessListener { dataSnapshot ->
-        if (dataSnapshot.exists()) {
-            val firstName = dataSnapshot.child("firstName").value as? String
-            val lastName = dataSnapshot.child("lastName").value as? String
-            callback(firstName, lastName)
-        } else {
-            callback(null, null)
-        }
-    }.addOnFailureListener {
-        callback(null, null)
-    }
 }
 
 fun deleteReservation(

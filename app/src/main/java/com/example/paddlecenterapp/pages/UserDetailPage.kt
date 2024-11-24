@@ -340,7 +340,7 @@ fun UserDetailsPage(
 
                 Button(onClick = {
                     // Mostra i report dell'utente
-                    //navController.navigate("UserReports/$userId")
+                    navController.navigate("UserReports/$userId")
                 }) {
                     Text("View Reports")
                 }

@@ -138,3 +138,21 @@ fun checkFriendship(friendId: String, friends: Map<String, Boolean>, callback: (
         callback(false)
     }
 }
+
+fun getUserNameAndSurname(userId: String, callback: (String?, String?) -> Unit) {
+    val database = FirebaseDatabase.getInstance()
+    val usersRef = database.reference.child("users")
+    val userRef = usersRef.child(userId)
+
+    userRef.get().addOnSuccessListener { dataSnapshot ->
+        if (dataSnapshot.exists()) {
+            val firstName = dataSnapshot.child("firstName").value as? String
+            val lastName = dataSnapshot.child("lastName").value as? String
+            callback(firstName, lastName)
+        } else {
+            callback(null, null)
+        }
+    }.addOnFailureListener {
+        callback(null, null)
+    }
+}

@@ -14,6 +14,7 @@ import com.example.paddlecenterapp.pages.ProfilePage
 import com.example.paddlecenterapp.pages.ReservationFieldPage
 import com.example.paddlecenterapp.pages.ReservationLessonPage
 import com.example.paddlecenterapp.pages.UserDetailsPage
+import com.example.paddlecenterapp.pages.UserReportsPage
 
 @Composable
 fun MyAppNavigation(modifier: Modifier = Modifier, authViewModel: AuthViewModel) {
@@ -53,6 +54,11 @@ fun MyAppNavigation(modifier: Modifier = Modifier, authViewModel: AuthViewModel)
         composable("userDetails/{userId}") { backStackEntry ->
             val userId = backStackEntry.arguments?.getString("userId") ?: ""
             UserDetailsPage(modifier, userId = userId, navController = navController, authViewModel = authViewModel)
+        }
+
+        composable("UserReports/{userId}") { backStackEntry ->
+            val userId = backStackEntry.arguments?.getString("userId") ?: ""
+            UserReportsPage(modifier, userId = userId, navController = navController, authViewModel = authViewModel)
         }
     }
 }
