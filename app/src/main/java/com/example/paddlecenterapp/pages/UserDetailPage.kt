@@ -50,7 +50,6 @@ import com.example.paddlecenterapp.models.User
 import com.example.paddlecenterapp.services.ReportDialog
 import com.example.paddlecenterapp.services.addFriendToBothUsers
 import com.example.paddlecenterapp.services.addReport
-import com.example.paddlecenterapp.services.getUserIdByUserObject
 import com.example.paddlecenterapp.services.removeFriendFromBothUsers
 import kotlinx.coroutines.launch
 import androidx.compose.runtime.*
@@ -250,26 +249,16 @@ fun UserDetailsPage(
                         // Mostra il dialog per rimuovere l'amico
                         showDialogFriend = true
                     } else {
-                        // Aggiungi l'amico
-                        user?.let {
-                            getUserIdByUserObject(it) { userId ->
-                                if (userId != null) {
-                                    addFriendToBothUsers(userId) { success ->
-                                        coroutineScope.launch {
-                                            snackbarMessage = if (success) {
-                                                "Friend added successfully!"
-                                            } else {
-                                                "Error in adding friend."
-                                            }
-                                        }
-                                        buttonText = "Remove Friend"  // Cambia il testo del bottone per indicare che sono amici
-                                    }
+                        addFriendToBothUsers(userId) { success ->
+                            coroutineScope.launch {
+                                snackbarMessage = if (success) {
+                                    "Friend added successfully!"
                                 } else {
-                                    coroutineScope.launch {
-                                        snackbarMessage = "User not found."
-                                    }
+                                    "Error in adding friend."
                                 }
                             }
+                            buttonText =
+                                "Remove Friend"  // Cambia il testo del bottone per indicare che sono amici
                         }
                     }
                 }
@@ -286,26 +275,16 @@ fun UserDetailsPage(
                     confirmButton = {
                         Button(
                             onClick = {
-                                user?.let {
-                                    getUserIdByUserObject(it) { userId ->
-                                        if (userId != null) {
-                                            removeFriendFromBothUsers(userId) { success ->
-                                                coroutineScope.launch {
-                                                    snackbarMessage = if (success) {
-                                                        "Friend removed successfully!"
-                                                    } else {
-                                                        "Error in removing friend."
-                                                    }
-                                                }
-                                                buttonText =
-                                                    "Add Friend"  // Cambia il testo del bottone per indicare che non sono più amici
-                                            }
+                                removeFriendFromBothUsers(userId) { success ->
+                                    coroutineScope.launch {
+                                        snackbarMessage = if (success) {
+                                            "Friend removed successfully!"
                                         } else {
-                                            coroutineScope.launch {
-                                                snackbarMessage = "User not found."
-                                            }
+                                            "Error in removing friend."
                                         }
                                     }
+                                    buttonText =
+                                        "Add Friend"  // Cambia il testo del bottone per indicare che non sono più amici
                                 }
                                 showDialogFriend = false
                             }
@@ -336,20 +315,15 @@ fun UserDetailsPage(
                 ReportDialog(
                     onDismiss = { showDialogReport = false },
                     onReport = { reason ->
-                        // Ottenere l'ID dell'utente che segnala e dell'utente segnalato
-                        user?.let {
-                            getUserIdByUserObject(it) { reportedUserId ->
-                                val reportedById = currentUser?.uid ?: ""
+                        val reportedById = currentUser?.uid ?: ""
 
-                                if (reportedUserId != null && reportedById.isNotEmpty()) {
-                                    addReport(
-                                        context = context,
-                                        reportedUserId = reportedUserId,
-                                        reportedById = reportedById,
-                                        reason = reason
-                                    )
-                                }
-                            }
+                        if (reportedById.isNotEmpty()) {
+                            addReport(
+                                context = context,
+                                reportedUserId = userId,
+                                reportedById = reportedById,
+                                reason = reason
+                            )
                         }
                     }
                 )
