@@ -72,9 +72,11 @@ fun UserDetailsPage(
 
     // Stato per controllare se l'utente è admin
     var isAdmin by remember { mutableStateOf(false) }
-    var buttonText by remember { mutableStateOf("Add Friend") }
+    var buttonTextFriend by remember { mutableStateOf("Add Friend") }
+    var buttonTextBan by remember { mutableStateOf("Ban User") }
     var showDialogFriend by remember { mutableStateOf(false) }
     var showDialogReport by remember { mutableStateOf(false) }
+    var showDialogBan by remember { mutableStateOf(false) }
     var user by remember { mutableStateOf<User?>(null) }
     val snackbarHostState = remember { SnackbarHostState() }
     val coroutineScope = rememberCoroutineScope()
@@ -103,17 +105,27 @@ fun UserDetailsPage(
         }
     }
 
-    // Ottieni i dati dell'utente tramite l'ID passato
+    // Ottieni i dati dell'utente tramite l'ID passato e controllo se l'user è bannato o meno
     LaunchedEffect(userId) {
         authViewModel.getUserDataFromRealtimeDatabase(userId) { retrievedUser ->
             if (retrievedUser != null) {
                 user = retrievedUser
+
+                // Verifica se l'utente è bannato
+                val isBanned = retrievedUser.banned
+                Log.d("Ban", "User: $retrievedUser")
+                // Log per monitorare lo stato del ban
+                Log.d("Ban", "User banned status: $isBanned")
+
+                // Imposta il testo del bottone per il ban
+                buttonTextBan = if (isBanned) "Unban User" else "Ban User"
             } else {
                 Log.e("UserDetailsPage", "Error retrieving user data")
             }
         }
     }
 
+    // controllo dell'amicizia tra i due utenti
     LaunchedEffect(currentUser, userId) {
         if (currentUser != null) {
             Log.d("FriendshipCheck", "MainUser: ${currentUser.uid}")
@@ -132,19 +144,12 @@ fun UserDetailsPage(
                             // Log per monitorare se gli utenti sono amici
                             Log.d("FriendshipCheck", "Are they friends? $isFriend")
 
-                            buttonText = if (isFriend) "Remove Friend" else "Add Friend"
+                            // Imposta il testo del bottone per amici
+                            buttonTextFriend = if (isFriend) "Remove Friend" else "Add Friend"
                         }
                     }
                 }
             }
-        }
-    }
-
-
-    // Funzione per mostrare la Snackbar
-    fun showSnackbar(message: String) {
-        coroutineScope.launch {
-            snackbarHostState.showSnackbar(message)
         }
     }
 
@@ -202,7 +207,7 @@ fun UserDetailsPage(
 
             var bio = user?.bio ?: ""
             var ranking = user?.ranking ?: ""
-            var banned = user?.banned
+            val banned = user?.banned
 
             if (isAdmin){
                 if (banned == true){
@@ -245,7 +250,7 @@ fun UserDetailsPage(
             // Bottone Aggiungi/Rimuovi Amico
             Button(
                 onClick = {
-                    if (buttonText == "Remove Friend") {
+                    if (buttonTextFriend == "Remove Friend") {
                         // Mostra il dialog per rimuovere l'amico
                         showDialogFriend = true
                     } else {
@@ -257,13 +262,13 @@ fun UserDetailsPage(
                                     "Error in adding friend."
                                 }
                             }
-                            buttonText =
+                            buttonTextFriend =
                                 "Remove Friend"  // Cambia il testo del bottone per indicare che sono amici
                         }
                     }
                 }
             ) {
-                Text(buttonText)
+                Text(buttonTextFriend)
             }
 
             // Dialog per confermare la rimozione dell'amico
@@ -283,7 +288,7 @@ fun UserDetailsPage(
                                             "Error in removing friend."
                                         }
                                     }
-                                    buttonText =
+                                    buttonTextFriend =
                                         "Add Friend"  // Cambia il testo del bottone per indicare che non sono più amici
                                 }
                                 showDialogFriend = false
@@ -342,30 +347,61 @@ fun UserDetailsPage(
 
                 Spacer(modifier = Modifier.height(8.dp))
 
-                Button(onClick = {
-                    if (banned == true) {
-                        // Gestisci l'unban dell'utente
-                        unbanUser(userId) { success ->
-                            if (success) {
-                                banned = false
-                                showSnackbar("User unbanned successfully!")
-                            } else {
-                                showSnackbar("Error unbanning user")
+                Button(
+                    onClick = {
+                        if (buttonTextBan == "Ban User") {
+                            showDialogBan = true
+                        } else {
+                            unbanUser(userId) { success ->
+                                coroutineScope.launch {
+                                    snackbarMessage = if (success) {
+                                        "User unbanned successfully!"
+                                    } else {
+                                        "Error unbanning user."
+                                    }
+                                }
+                                buttonTextBan =
+                                    "Uban User"
                             }
                         }
-                    } else {
-                        // Gestisci il ban dell'utente
-                        banUser(userId) { success ->
-                            if (success) {
-                                banned = true
-                                showSnackbar("User banned successfully!")
-                            } else {
-                                showSnackbar("Error banning user")
+                    },
+                    colors = ButtonDefaults.buttonColors(MaterialTheme.colorScheme.error)
+                ) {
+                    Text(buttonTextBan)
+                }
+
+                // Dialog per confermare la rimozione dell'amico
+                if (showDialogBan) {
+                    AlertDialog(
+                        onDismissRequest = { showDialogBan = false },
+                        title = { Text("Ban User") },
+                        text = { Text("Are you sure you want to ban this user?") },
+                        confirmButton = {
+                            Button(
+                                onClick = {
+                                    banUser(userId) { success ->
+                                        coroutineScope.launch {
+                                            snackbarMessage = if (success) {
+                                                "User banned successfully!"
+                                            } else {
+                                                "Error during user ban"
+                                            }
+                                        }
+                                        buttonTextBan =
+                                            "Unban User"  // Cambia il testo del bottone per indicare che non sono più amici
+                                    }
+                                    showDialogBan = false
+                                }
+                            ) {
+                                Text("Yes")
+                            }
+                        },
+                        dismissButton = {
+                            Button(onClick = { showDialogBan = false }) {
+                                Text("Cancel")
                             }
                         }
-                    }
-                }) {
-                    Text(if (banned == true) "Unban User" else "Ban User")
+                    )
                 }
             }
         }
