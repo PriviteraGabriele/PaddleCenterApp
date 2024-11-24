@@ -2,13 +2,23 @@ package com.example.paddlecenterapp.pages
 
 import android.annotation.SuppressLint
 import android.util.Log
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.Card
+import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
@@ -23,6 +33,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
@@ -30,6 +41,7 @@ import com.example.paddlecenterapp.AuthViewModel
 import com.example.paddlecenterapp.BottomNavigationBar
 import com.example.paddlecenterapp.models.Report
 import com.example.paddlecenterapp.models.User
+import com.example.paddlecenterapp.services.deleteReport
 import com.example.paddlecenterapp.services.getUserNameAndSurname
 
 @SuppressLint("RememberReturnType")
@@ -130,15 +142,52 @@ fun UserReportsPage(modifier: Modifier = Modifier,
                 Spacer(modifier = Modifier.height(12.dp))
 
                 LazyColumn {
-                    items(reports?.entries?.toList() ?: emptyList()) { (_, report) ->
-                        val reporterName = reporterNames[report.reportedById] ?: "Unknown"
-                        Text(
-                            text = "Reporter: $reporterName\n" +
-                                    "Reason: ${report.reason}\n" +
-                                    "Date: ${report.timestamp}",
-                            modifier = Modifier.padding(vertical = 4.dp)
-                        )
+                    items(reports?.entries?.toList() ?: emptyList()) { (reportId, report) ->
+                        ReportItem(userId = userId, reportId = reportId, report = report, reporterNames = reporterNames) {
+                            // Azione dopo che il report è stato cancellato
+                        }
                     }
+                }
+
+            }
+        }
+    }
+}
+
+@Composable
+fun ReportItem(userId: String, reportId: String,report: Report, reporterNames: Map<String, String>, onDeleteSuccess: () -> Unit) {
+    val context = LocalContext.current
+    val reporterName = reporterNames[report.reportedById] ?: "Unknown"
+
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(8.dp)
+    ) {
+        Column(modifier = Modifier.padding(16.dp)) {
+            Text("Reporter: $reporterName", fontSize = 16.sp)
+            Text("Reason: ${report.reason}", fontSize = 16.sp)
+            Text("Date: ${report.timestamp}", fontSize = 14.sp)
+
+            Spacer(modifier = Modifier.height(8.dp))
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(16.dp), // Spazio tra i tasti
+                verticalAlignment = Alignment.CenterVertically // Allineamento verticale dei tasti
+            ) {
+                Button(
+                    onClick = {
+                        deleteReport(context, userId, reportId)
+                        onDeleteSuccess()
+                    },
+                    colors = ButtonDefaults.buttonColors(MaterialTheme.colorScheme.error),
+                    modifier = Modifier.weight(1f)
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Delete,
+                        contentDescription = "Delete report",
+                    )
                 }
             }
         }

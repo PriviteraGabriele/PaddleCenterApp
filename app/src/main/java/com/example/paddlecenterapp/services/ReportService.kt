@@ -60,6 +60,26 @@ fun addReport(
     }
 }
 
+fun deleteReport(
+    context: Context,
+    reportedUserId: String,
+    reportKey: String
+) {
+    val database = FirebaseDatabase.getInstance().reference
+
+    // Riferimento al nodo del report da eliminare
+    val reportRef = database.child("users").child(reportedUserId).child("reports").child(reportKey)
+
+    // Elimina il report
+    reportRef.removeValue()
+        .addOnSuccessListener {
+            Toast.makeText(context, "Report deleted", Toast.LENGTH_SHORT).show()
+        }
+        .addOnFailureListener { e ->
+            Toast.makeText(context, "Error: ${e.message}", Toast.LENGTH_SHORT).show()
+        }
+}
+
 @Composable
 fun ReportDialog(
     onDismiss: () -> Unit,
