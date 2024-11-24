@@ -338,10 +338,12 @@ fun UserDetailsPage(
             if (isAdmin) {
                 Spacer(modifier = Modifier.height(16.dp))
 
-                Button(onClick = {
+                Button(
+                    onClick = {
                     // Mostra i report dell'utente
                     navController.navigate("UserReports/$userId")
-                }) {
+                    },
+                    colors = ButtonDefaults.buttonColors(MaterialTheme.colorScheme.errorContainer)) {
                     Text("View Reports")
                 }
 
@@ -365,7 +367,7 @@ fun UserDetailsPage(
                             }
                         }
                     },
-                    colors = ButtonDefaults.buttonColors(MaterialTheme.colorScheme.error)
+                    colors = ButtonDefaults.buttonColors(MaterialTheme.colorScheme.errorContainer)
                 ) {
                     Text(buttonTextBan)
                 }
