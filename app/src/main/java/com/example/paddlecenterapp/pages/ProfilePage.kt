@@ -27,6 +27,7 @@ import androidx.navigation.NavController
 import com.example.paddlecenterapp.AuthViewModel
 import com.example.paddlecenterapp.BottomNavigationBar
 import com.example.paddlecenterapp.R
+import com.google.firebase.database.FirebaseDatabase
 import java.util.Calendar
 
 @Composable
@@ -35,33 +36,50 @@ fun ProfilePage(
     navController: NavController,
     authViewModel: AuthViewModel
 ) {
-    var selectedItem by remember { mutableIntStateOf(4) } // Profilo è la terza voce
+    var selectedItem by remember { mutableIntStateOf(4) } // Profilo è la quarta voce
 
     // Recupera l'utente attuale da Firebase Authentication
     val currentUser = authViewModel.getCurrentUser()
 
-    // Stati per i dati personali, preimpostati con i dati dell'utente
+    // Stati per i dati personali
     var firstName by remember { mutableStateOf("") }
     var lastName by remember { mutableStateOf("") }
     var birthDate by remember { mutableStateOf("") }
     var gender by remember { mutableStateOf("") }
-    var bio by remember { mutableStateOf("") }  // Aggiunto per la bio
-    var ranking by remember { mutableStateOf("") }  // Aggiunto per il rank
+    var bio by remember { mutableStateOf("") } // Aggiunto per la bio
+    var averageReputation by remember { mutableFloatStateOf(0f) } // Media dinamica della reputazione
 
     // Stato per la modalità di modifica
     var isEditing by remember { mutableStateOf(false) }
 
-    // Recupera i dati aggiuntivi da Firebase Realtime Database se l'utente è loggato
+    // Recupera i dati utente e la media della reputazione
     LaunchedEffect(currentUser) {
         if (currentUser != null) {
+            // Recupera i dati utente
             authViewModel.getUserDataFromRealtimeDatabase(currentUser.uid) { user ->
                 if (user != null) {
                     firstName = user.firstName
                     lastName = user.lastName
                     birthDate = user.birthDate
                     gender = user.gender
-                    bio = user.bio  // Recupera la bio
-                    ranking = user.ranking // Recupera il rank
+                    bio = user.bio
+                }
+            }
+
+            // Calcola la media della reputazione
+            val reputationRef = FirebaseDatabase.getInstance().getReference()
+                .child("users")
+                .child(currentUser.uid)
+                .child("reputation")
+
+            reputationRef.get().addOnSuccessListener { dataSnapshot ->
+                if (dataSnapshot.exists()) {
+                    val reputationMap = dataSnapshot.value as? Map<String, Int>
+                    if (!reputationMap.isNullOrEmpty()) {
+                        val totalVotes = reputationMap.values.sum()
+                        val numberOfVotes = reputationMap.size
+                        averageReputation = totalVotes.toFloat() / numberOfVotes
+                    }
                 }
             }
         }
@@ -89,16 +107,14 @@ fun ProfilePage(
             )
         }
     ) { contentPadding ->
-        // Aggiunta scrollabilità con verticalScroll
         Column(
             modifier = modifier
                 .fillMaxSize()
                 .padding(contentPadding)
-                .verticalScroll(enabled = true, state = rememberScrollState()) // Scroll abilita
-                .padding(end = 4.dp), // Aggiungi padding per la scrollbar
+                .verticalScroll(rememberScrollState())
+                .padding(end = 4.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            // Mostra dati di default (foto, bio, rank)
             if (!isEditing) {
                 // Titolo della pagina
                 Text(
@@ -108,28 +124,28 @@ fun ProfilePage(
                     modifier = Modifier.padding(bottom = 16.dp)
                 )
 
-                // Foto profilo con immagine personalizzata
+                // Foto profilo
                 Box(
                     contentAlignment = Alignment.Center,
                     modifier = Modifier
-                        .size(120.dp) // Aumentata la dimensione per un look più prominente
+                        .size(120.dp)
                         .background(
                             color = MaterialTheme.colorScheme.primaryContainer,
                             shape = CircleShape
                         )
-                        .padding(6.dp) // Maggiore spaziatura per l'immagine
+                        .padding(6.dp)
                 ) {
                     Image(
-                        painter = painterResource(id = R.drawable.profile_picture), // Usa l'immagine caricata
+                        painter = painterResource(id = R.drawable.profile_picture),
                         contentDescription = "Profile Picture",
                         modifier = Modifier
-                            .size(110.dp) // Aggiusta la dimensione dell'immagine
-                            .clip(CircleShape), // Ritaglia l'immagine a forma di cerchio
-                        contentScale = ContentScale.Crop // Adatta l'immagine al contenitore
+                            .size(110.dp)
+                            .clip(CircleShape),
+                        contentScale = ContentScale.Crop
                     )
                 }
 
-                Spacer(modifier = Modifier.height(16.dp)) // Maggiore spazio tra immagine e dati utente
+                Spacer(modifier = Modifier.height(16.dp))
 
                 OutlinedTextField(
                     value = bio,
@@ -137,28 +153,26 @@ fun ProfilePage(
                     label = { Text("Bio") },
                     enabled = false,
                     modifier = Modifier
-                        .widthIn(min = 80.dp, max = 320.dp) // Imposta la larghezza minima e massima
-                        .heightIn(min = 56.dp) // Imposta un'altezza minima, può espandersi
-                        .fillMaxWidth() // Mantiene la larghezza fissa all'interno dei limiti
+                        .widthIn(min = 80.dp, max = 320.dp)
+                        .fillMaxWidth()
                 )
 
                 Spacer(modifier = Modifier.height(8.dp))
 
                 OutlinedTextField(
-                    value = ranking,
-                    onValueChange = { ranking = it },
-                    label = { Text("Ranking") },
+                    value = "${"%.1f".format(averageReputation)}/5",
+                    onValueChange = {},
+                    label = { Text("Reputation") },
                     enabled = false
                 )
 
                 Spacer(modifier = Modifier.height(8.dp))
 
-                // Bottone per entrare in modalità modifica
                 TextButton(
                     onClick = { isEditing = true },
                     modifier = Modifier
                         .padding(vertical = 8.dp)
-                        .background(MaterialTheme.colorScheme.primary, shape = RoundedCornerShape(50)) // Aggiunto angolo arrotondato
+                        .background(MaterialTheme.colorScheme.primary, shape = RoundedCornerShape(50))
                 ) {
                     Text(
                         text = "Edit Profile",
@@ -167,7 +181,6 @@ fun ProfilePage(
                     )
                 }
 
-                // Bottone per il logout
                 TextButton(
                     onClick = {
                         authViewModel.signout()
@@ -175,7 +188,7 @@ fun ProfilePage(
                     },
                     modifier = Modifier
                         .padding(vertical = 8.dp)
-                        .background(MaterialTheme.colorScheme.error, shape = RoundedCornerShape(50)) // Bottone di logout in rosso
+                        .background(MaterialTheme.colorScheme.error, shape = RoundedCornerShape(50))
                 ) {
                     Text(
                         text = "Sign out",
