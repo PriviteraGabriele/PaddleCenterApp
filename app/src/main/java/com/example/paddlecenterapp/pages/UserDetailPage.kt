@@ -58,6 +58,7 @@ import androidx.compose.ui.platform.LocalContext
 import com.example.paddlecenterapp.services.banUser
 import com.example.paddlecenterapp.services.checkFriendship
 import com.example.paddlecenterapp.services.unbanUser
+import com.google.firebase.database.FirebaseDatabase
 
 @SuppressLint("UnusedMaterial3ScaffoldPaddingParameter")
 @Composable
@@ -77,6 +78,9 @@ fun UserDetailsPage(
     var showDialogFriend by remember { mutableStateOf(false) }
     var showDialogReport by remember { mutableStateOf(false) }
     var showDialogBan by remember { mutableStateOf(false) }
+    var showDialogRating by remember { mutableStateOf(false) } // Stato per visualizzare il dialog del voto
+    var ratingValue by remember { mutableIntStateOf(1) } // Stato per il valore del voto
+    var averageRating by remember { mutableFloatStateOf(0f) } // Stato per la media dei voti
     var user by remember { mutableStateOf<User?>(null) }
     val snackbarHostState = remember { SnackbarHostState() }
     val coroutineScope = rememberCoroutineScope()
@@ -153,6 +157,28 @@ fun UserDetailsPage(
         }
     }
 
+    LaunchedEffect(userId) {
+        // Recupera la mappa dei voti dall'utente selezionato
+        val reputationRef = FirebaseDatabase.getInstance().getReference()
+            .child("users")
+            .child(userId)
+            .child("reputation")
+
+        reputationRef.get().addOnSuccessListener { dataSnapshot ->
+            if (dataSnapshot.exists()) {
+                val reputationMap = dataSnapshot.value as? Map<String, Int>
+                if (!reputationMap.isNullOrEmpty()) {
+                    // Calcola la media dei voti
+                    val totalVotes = reputationMap.values.sum()
+                    val numberOfVotes = reputationMap.size
+                    averageRating = totalVotes.toFloat() / numberOfVotes
+                }
+            }
+        }.addOnFailureListener {
+            Log.e("UserDetailsPage", "Failed to fetch reputation data")
+        }
+    }
+
     Scaffold(
         bottomBar = {
             BottomNavigationBar(
@@ -206,7 +232,6 @@ fun UserDetailsPage(
             Spacer(modifier = Modifier.height(8.dp))
 
             var bio = user?.bio ?: ""
-            var ranking = user?.ranking ?: ""
             val banned = user?.banned
 
             if (isAdmin){
@@ -238,10 +263,11 @@ fun UserDetailsPage(
 
             Spacer(modifier = Modifier.height(8.dp))
 
+            // Modifica il campo per visualizzare la media dei voti
             OutlinedTextField(
-                value = ranking,
-                onValueChange = { ranking = it },
-                label = { Text("Ranking") },
+                value = "${"%.1f".format(averageRating)}/5", // Formatta la media come "X/5"
+                onValueChange = {},
+                label = { Text("Reputation") },
                 enabled = false
             )
 
@@ -305,7 +331,70 @@ fun UserDetailsPage(
                 )
             }
 
-            Spacer(modifier = Modifier.height(8.dp))
+            // Aggiungi il nuovo bottone per il voto
+            Button(
+                onClick = { showDialogRating = true },
+            ) {
+                Text("Rate User")
+            }
+
+            if (showDialogRating) {
+                // Mostra la finestra di dialogo per il voto
+                AlertDialog(
+                    onDismissRequest = { showDialogRating = false },
+                    title = { Text("Rate ${user?.firstName} ${user?.lastName}") },
+                    text = {
+                        Column {
+                            Text("Select a rating from 1 to 5")
+                            // Un semplice slider per selezionare il voto
+                            androidx.compose.material3.Slider(
+                                value = ratingValue.toFloat(),
+                                onValueChange = { ratingValue = it.toInt() },
+                                valueRange = 1f..5f,
+                                steps = 4,
+                                modifier = Modifier.fillMaxWidth()
+                            )
+                            Text("Rating: $ratingValue", modifier = Modifier.padding(top = 8.dp))
+                        }
+                    },
+                    confirmButton = {
+                        Button(
+                            onClick = {
+                                // Salva il voto nel database
+                                val ratedById = currentUser?.uid ?: ""
+                                if (ratedById.isNotEmpty()) {
+                                    val reputationRef = FirebaseDatabase.getInstance().getReference()
+                                        .child("users")
+                                        .child(userId)
+                                        .child("reputation")
+
+                                    reputationRef.child(ratedById).setValue(ratingValue)
+                                        .addOnSuccessListener {
+                                            coroutineScope.launch {
+                                                snackbarMessage = "Rating submitted successfully!"
+                                            }
+                                        }
+                                        .addOnFailureListener {
+                                            coroutineScope.launch {
+                                                snackbarMessage = "Error submitting rating."
+                                            }
+                                        }
+                                }
+                                showDialogRating = false
+                            }
+                        ) {
+                            Text("Submit")
+                        }
+                    },
+                    dismissButton = {
+                        Button(onClick = { showDialogRating = false }) {
+                            Text("Cancel")
+                        }
+                    }
+                )
+            }
+
+            Spacer(modifier = Modifier.width(8.dp)) // Aggiungi uno spazio tra i due pulsanti
 
             Button(
                 onClick = { showDialogReport = true },
