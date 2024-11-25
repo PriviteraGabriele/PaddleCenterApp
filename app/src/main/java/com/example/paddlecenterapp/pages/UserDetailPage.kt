@@ -452,7 +452,7 @@ fun UserDetailsPage(
                                     }
                                 }
                                 buttonTextBan =
-                                    "Uban User"
+                                    "Unban User"
                             }
                         }
                     },

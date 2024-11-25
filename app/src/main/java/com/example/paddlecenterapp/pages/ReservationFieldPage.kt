@@ -37,7 +37,7 @@ fun ReservationFieldPage(
     var fields by remember { mutableStateOf<List<Field>>(emptyList()) }
     var selectedField by remember { mutableStateOf<Field?>(null) }
     var selectedSlot by remember { mutableStateOf<Slot?>(null) }
-    var participants by remember { mutableStateOf<List<Pair<String, String?>>>(List(4) { "" to null }) } // Lista di nome -> ID
+    var participants by remember { mutableStateOf<List<Pair<String, String?>>>(List(4) { "" to null }) }
     var searchQuery by remember { mutableStateOf("") }
     var foundUsers by remember { mutableStateOf<List<User>>(emptyList()) }
     val database: DatabaseReference = FirebaseDatabase.getInstance().reference
@@ -45,7 +45,6 @@ fun ReservationFieldPage(
     val snackbarHostState = remember { SnackbarHostState() }
     val coroutineScope = rememberCoroutineScope()
 
-    // Funzione per cercare utenti
     fun performUserSearch(query: String) {
         coroutineScope.launch {
             val users = searchUsers(query, authViewModel, flag = true)
@@ -53,8 +52,7 @@ fun ReservationFieldPage(
         }
     }
 
-    // Ottieni l'utente autenticato
-    val currentUser = authViewModel.getCurrentUser() // supponiamo che tu abbia una proprietà `currentUser` nel view model
+    val currentUser = authViewModel.getCurrentUser()
     LaunchedEffect(currentUser) {
         if (currentUser != null) {
             authViewModel.getUserDataFromRealtimeDatabase(currentUser.uid) { user ->
@@ -66,33 +64,27 @@ fun ReservationFieldPage(
                 }
 
                 if (user != null) {
-                    isAdmin = user.admin // Aggiorna lo stato correttamente
+                    isAdmin = user.admin
                 }
             }
         }
     }
 
-    // Fetch fields data from Firebase
     LaunchedEffect(Unit) {
         database.child("fields").get().addOnSuccessListener {
             val now = LocalDateTime.now()
             val formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm")
 
-            // Verifica se i dati sono nulli
             val fieldMap = it.getValue<Map<String, Map<String, Any>>>()
             if (fieldMap == null) {
-                // Se i dati sono nulli, logghiamo un errore e usciamo dalla funzione
                 Log.e("ReservationFieldPage", "Failed to load fields: Data is null.")
                 return@addOnSuccessListener
             }
 
-            // Se i dati sono validi, proseguiamo con il parsing
             val fieldList = fieldMap.map { (key, value) ->
-                // Filtra gli slot disponibili
                 val availability = (value["availability"] as? Map<String, Map<String, Any>>)?.mapNotNull { entry ->
                     val date = entry.value["date"] as? String
                     val status = entry.value["status"] as? Boolean ?: false
-
                     if (date != null && status) {
                         val slotDate = LocalDateTime.parse(date, formatter)
                         if (slotDate.isAfter(now)) {
@@ -108,7 +100,6 @@ fun ReservationFieldPage(
                 Field(key, value["name"] as? String ?: "Unknown", availability)
             }
 
-            // Aggiorna la lista dei campi
             fields = fieldList
         }.addOnFailureListener { exception ->
             Log.e("ReservationFieldPage", "Failed to load fields: ${exception.message}")
@@ -123,7 +114,7 @@ fun ReservationFieldPage(
                 navController = navController
             )
         },
-        snackbarHost = { SnackbarHost(hostState = snackbarHostState) } // Configurazione notifiche
+        snackbarHost = { SnackbarHost(hostState = snackbarHostState) }
     ) { contentPadding ->
         Column(
             modifier = modifier
@@ -137,9 +128,12 @@ fun ReservationFieldPage(
 
             if (selectedField == null) {
                 Text("Select Field")
-                LazyColumn {
+
+                Spacer(modifier = Modifier.height(12.dp))
+
+                LazyColumn(modifier = Modifier.fillMaxWidth()) {
                     items(fields) { field ->
-                        Button(
+                        OutlinedButton(
                             onClick = { selectedField = field },
                             modifier = Modifier.fillMaxWidth().padding(8.dp)
                         ) {
@@ -148,33 +142,30 @@ fun ReservationFieldPage(
                     }
                 }
 
-                if(isAdmin){
+                if (isAdmin) {
                     AddEntityButton("field")
                 }
             }
 
             selectedField?.let { field ->
-                // Filtra gli slot disponibili
                 val availableSlots = field.availability.values.filter { it.status }
 
-                // Mostra gli slot disponibili solo se non è stato selezionato uno slot
-                Text("Select Slot for ${field.name}")
-
+                if (selectedSlot == null) {
+                    Text("Select Slot for ${field.name}")
+                }
                 if (availableSlots.isEmpty()) {
                     Spacer(modifier = Modifier.height(16.dp))
 
-                    // Nessun slot disponibile
                     Text(
                         text = "No available slots for ${field.name}",
                         fontSize = 16.sp,
                         color = MaterialTheme.colorScheme.error,
                     )
                 } else {
-                    // Mostra la lista degli slot solo se nessun slot è stato selezionato
                     if (selectedSlot == null) {
                         LazyColumn {
                             items(availableSlots) { slot ->
-                                Button(
+                                OutlinedButton(
                                     onClick = { selectedSlot = slot },
                                     modifier = Modifier.fillMaxWidth().padding(8.dp)
                                 ) {
@@ -185,16 +176,14 @@ fun ReservationFieldPage(
                     }
                 }
 
-                if(isAdmin){
+                if (selectedSlot == null && isAdmin) {
                     AddAvailabilityButton(field.id, "field")
                 }
 
                 selectedSlot?.let {
-                    // Mostra le informazioni sullo slot selezionato
                     Text("${field.name} (${selectedSlot!!.date})")
                     Spacer(modifier = Modifier.height(16.dp))
 
-                    // Ricerca utenti
                     TextField(
                         value = searchQuery,
                         onValueChange = {
@@ -205,14 +194,13 @@ fun ReservationFieldPage(
                         modifier = Modifier.fillMaxWidth().padding(8.dp)
                     )
 
-                    LazyColumn {
+                    LazyColumn(modifier = Modifier.fillMaxWidth()) {
                         items(foundUsers) { user ->
-                            Button(
+                            OutlinedButton(
                                 onClick = {
                                     val userFullName = "${user.firstName} ${user.lastName}"
                                     getUserIdByUserObject(user) { userId ->
                                         if (userId != null) {
-                                            // Controlla se l'ID dell'utente è già presente nella lista dei partecipanti
                                             if (participants.any { it.second == userId }) {
                                                 coroutineScope.launch {
                                                     snackbarHostState.showSnackbar("This user is already a participant.")
@@ -245,8 +233,8 @@ fun ReservationFieldPage(
 
                     Spacer(modifier = Modifier.height(16.dp))
 
-                    // Mostra partecipanti (nomi)
                     Text("Participants")
+
                     participants.forEachIndexed { index, participant ->
                         TextField(
                             value = participant.first,
@@ -262,12 +250,13 @@ fun ReservationFieldPage(
                                 )
                             },
                             modifier = Modifier.fillMaxWidth().padding(8.dp),
-                            enabled = false // Disabilita la modifica manuale
+                            enabled = false
                         )
                     }
 
                     Spacer(modifier = Modifier.height(16.dp))
-                    Button(
+
+                    OutlinedButton(
                         onClick = {
                             selectedField?.let { field ->
                                 saveReservation(
@@ -280,7 +269,7 @@ fun ReservationFieldPage(
                                 )
                             }
                         },
-                        modifier = Modifier.padding(8.dp)
+                        modifier = Modifier.padding(8.dp).fillMaxWidth()
                     ) {
                         Text("Confirm Reservation")
                     }
@@ -289,6 +278,7 @@ fun ReservationFieldPage(
         }
     }
 }
+
 
 // Funzione per salvare la prenotazione e aggiornare lo stato dello slot
 fun saveReservation(

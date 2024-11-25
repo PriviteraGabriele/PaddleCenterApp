@@ -163,7 +163,7 @@ fun ReservationLessonPage(modifier: Modifier = Modifier, navController: NavContr
                 Text("Select Coach")
                 LazyColumn {
                     items(coaches) { coach ->
-                        Button(
+                        OutlinedButton(
                             onClick = { selectedCoach = coach },
                             modifier = Modifier.fillMaxWidth().padding(8.dp)
                         ) {
@@ -172,7 +172,7 @@ fun ReservationLessonPage(modifier: Modifier = Modifier, navController: NavContr
                     }
                 }
 
-                if(isAdmin){
+                if(selectedCoach == null && isAdmin){
                     AddEntityButton("coach")
                 }
             }
@@ -196,7 +196,7 @@ fun ReservationLessonPage(modifier: Modifier = Modifier, navController: NavContr
                 } else {
                     LazyColumn {
                         items(availableSlots) { slot ->
-                            Button(
+                            OutlinedButton(
                                 onClick = { selectedSlot = slot },
                                 modifier = Modifier.fillMaxWidth().padding(8.dp)
                             ) {
@@ -216,7 +216,7 @@ fun ReservationLessonPage(modifier: Modifier = Modifier, navController: NavContr
                 Spacer(modifier = Modifier.height(16.dp))
                 Text("Selected Slot: ${it.date}")
                 Spacer(modifier = Modifier.height(16.dp))
-                Button(
+                OutlinedButton(
                     onClick = {
                         selectedCoach?.let { coach ->
                             saveReservation(coach.id, it.date)
