@@ -1,7 +1,7 @@
 package com.example.paddlecenterapp.models
 
 data class Reservation(
-    val id: String = "",  // Impostiamo valori di default
+    val id: String = "",
     val type: String = "",
     val slotDate: String = "",
     val participants: List<String> = emptyList(),
@@ -10,4 +10,3 @@ data class Reservation(
     var fieldName: String? = null,
     var coachName: String? = null
 )
-

@@ -58,7 +58,7 @@ fun UserReportsPage(
     var reports by remember { mutableStateOf<Map<String, Report>?>(null) }
     var userName by remember { mutableStateOf<String?>(null) }
     var reporterNames by remember { mutableStateOf<Map<String, String>>(emptyMap()) }
-    var isDataReady by remember { mutableStateOf(false) } // Stato per indicare che i dati sono pronti
+    var isDataReady by remember { mutableStateOf(false) }
 
     // Funzione lambda per ricaricare i dati
     val fetchData: () -> Unit = {
@@ -178,8 +178,8 @@ fun ReportItem(userId: String, reportId: String, report: Report, reporterNames: 
 
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(16.dp), // Spazio tra i tasti
-                verticalAlignment = Alignment.CenterVertically // Allineamento verticale dei tasti
+                horizontalArrangement = Arrangement.spacedBy(16.dp),
+                verticalAlignment = Alignment.CenterVertically
             ) {
                 Button(
                     onClick = {

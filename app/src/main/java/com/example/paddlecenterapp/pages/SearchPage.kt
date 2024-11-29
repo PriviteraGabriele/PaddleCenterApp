@@ -32,7 +32,6 @@ fun SearchPage(modifier: Modifier = Modifier, navController: NavController, auth
     var query by remember { mutableStateOf("") }
     val context = LocalContext.current
     var users by remember { mutableStateOf<List<User>>(emptyList()) }
-
     val snackbarHostState = remember { SnackbarHostState() }
 
     LaunchedEffect(query) {
@@ -106,20 +105,20 @@ fun UserItem(user: User, navController: NavController) {
         Box(
             contentAlignment = Alignment.Center,
             modifier = Modifier
-                .size(50.dp) // Aumentata la dimensione per un look più prominente
+                .size(50.dp)
                 .background(
                     color = MaterialTheme.colorScheme.primaryContainer,
                     shape = CircleShape
                 )
-                .padding(6.dp) // Maggiore spaziatura per l'immagine
+                .padding(6.dp)
         ) {
             Image(
-                painter = painterResource(id = R.drawable.profile_picture), // Usa l'immagine caricata
+                painter = painterResource(id = R.drawable.profile_picture),
                 contentDescription = "Profile Picture",
                 modifier = Modifier
-                    .size(60.dp) // Aggiusta la dimensione dell'immagine
-                    .clip(CircleShape), // Ritaglia l'immagine a forma di cerchio
-                contentScale = ContentScale.Crop // Adatta l'immagine al contenitore
+                    .size(60.dp)
+                    .clip(CircleShape),
+                contentScale = ContentScale.Crop
             )
         }
 

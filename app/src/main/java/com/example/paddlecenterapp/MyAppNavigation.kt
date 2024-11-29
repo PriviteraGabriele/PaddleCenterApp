@@ -43,7 +43,6 @@ fun MyAppNavigation(modifier: Modifier = Modifier, authViewModel: AuthViewModel)
             ReservationLessonPage(modifier, navController, authViewModel)
         }
 
-        // Gestione del parametro dinamico reservationId con authViewModel
         composable("edit_reservation/{reservationId}") { backStackEntry ->
             val reservationId = backStackEntry.arguments?.getString("reservationId")
             if (reservationId != null) {

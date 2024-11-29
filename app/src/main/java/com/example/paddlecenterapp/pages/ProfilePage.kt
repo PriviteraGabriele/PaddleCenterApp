@@ -37,25 +37,18 @@ fun ProfilePage(
     authViewModel: AuthViewModel
 ) {
     var selectedItem by remember { mutableIntStateOf(4) } // Profilo è la quarta voce
-
-    // Recupera l'utente attuale da Firebase Authentication
     val currentUser = authViewModel.getCurrentUser()
-
-    // Stati per i dati personali
     var firstName by remember { mutableStateOf("") }
     var lastName by remember { mutableStateOf("") }
     var birthDate by remember { mutableStateOf("") }
     var gender by remember { mutableStateOf("") }
     var bio by remember { mutableStateOf("") } // Aggiunto per la bio
     var averageReputation by remember { mutableFloatStateOf(0f) } // Media dinamica della reputazione
-
-    // Stato per la modalità di modifica
     var isEditing by remember { mutableStateOf(false) }
 
     // Recupera i dati utente e la media della reputazione
     LaunchedEffect(currentUser) {
         if (currentUser != null) {
-            // Recupera i dati utente
             authViewModel.getUserDataFromRealtimeDatabase(currentUser.uid) { user ->
                 if (user != null) {
                     firstName = user.firstName
@@ -116,7 +109,6 @@ fun ProfilePage(
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             if (!isEditing) {
-                // Titolo della pagina
                 Text(
                     text = "Profile Page",
                     fontSize = 32.sp,
@@ -124,7 +116,6 @@ fun ProfilePage(
                     modifier = Modifier.padding(bottom = 16.dp)
                 )
 
-                // Foto profilo
                 Box(
                     contentAlignment = Alignment.Center,
                     modifier = Modifier
@@ -146,6 +137,10 @@ fun ProfilePage(
                 }
 
                 Spacer(modifier = Modifier.height(16.dp))
+
+                Text(text = "$firstName $lastName", fontSize = 22.sp)
+
+                Spacer(modifier = Modifier.height(8.dp))
 
                 OutlinedTextField(
                     value = bio,
@@ -204,28 +199,27 @@ fun ProfilePage(
                     modifier = Modifier.padding(bottom = 16.dp)
                 )
 
-                // Foto profilo con immagine personalizzata
                 Box(
                     contentAlignment = Alignment.Center,
                     modifier = Modifier
-                        .size(100.dp) // Dimensione del cerchio
+                        .size(100.dp)
                         .background(
                             color = MaterialTheme.colorScheme.primaryContainer,
                             shape = CircleShape
                         )
-                        .padding(4.dp) // Spaziatura interna per l'immagine
+                        .padding(4.dp)
                 ) {
                     Image(
-                        painter = painterResource(id = R.drawable.profile_picture), // Usa l'immagine caricata
+                        painter = painterResource(id = R.drawable.profile_picture),
                         contentDescription = "Profile Picture",
                         modifier = Modifier
-                            .size(120.dp) // Dimensione dell'immagine all'interno del cerchio
-                            .clip(CircleShape), // Ritaglia l'immagine a forma di cerchio
-                        contentScale = ContentScale.Crop // Adatta l'immagine al contenitore
+                            .size(120.dp)
+                            .clip(CircleShape),
+                        contentScale = ContentScale.Crop
                     )
                 }
 
-                Spacer(modifier = Modifier.height(12.dp)) // Spazio tra immagine e dati utente
+                Spacer(modifier = Modifier.height(12.dp))
                 OutlinedTextField(
                     value = firstName,
                     onValueChange = { firstName = it },
@@ -262,9 +256,9 @@ fun ProfilePage(
                     onValueChange = { bio = it },
                     label = { Text("Bio") },
                     modifier = Modifier
-                        .widthIn(min = 80.dp, max = 280.dp) // Imposta la larghezza minima e massima
-                        .heightIn(min = 56.dp) // Imposta un'altezza minima, può espandersi
-                        .fillMaxWidth() // Mantiene la larghezza fissa all'interno dei limiti
+                        .widthIn(min = 80.dp, max = 280.dp)
+                        .heightIn(min = 56.dp)
+                        .fillMaxWidth()
                 )
 
                 Spacer(modifier = Modifier.height(8.dp))
@@ -290,7 +284,7 @@ fun ProfilePage(
                         authViewModel.updateProfile(
                             firstName, lastName, birthDate, gender, bio
                         )
-                        isEditing = false  // Esci dalla modalità di modifica
+                        isEditing = false
                     },
                     colors = ButtonDefaults.buttonColors(containerColor = Color.Blue)
                 ) {

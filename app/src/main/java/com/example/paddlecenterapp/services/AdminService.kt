@@ -23,10 +23,8 @@ fun banUser(bannedUserId: String, onComplete: (Boolean) -> Unit) {
     database.child("users").child(bannedUserId).child("banned").setValue(true)
         .addOnCompleteListener { task ->
             if (task.isSuccessful) {
-                // Chiamata di successo
                 onComplete(true)
             } else {
-                // Chiamata fallita
                 onComplete(false)
             }
         }
@@ -36,14 +34,12 @@ fun unbanUser(bannedUserId: String, onComplete: (Boolean) -> Unit) {
     // Ottieni riferimento al database di Firebase
     val database = FirebaseDatabase.getInstance().reference
 
-    // Specifica il percorso dell'utente e imposta la chiave isBanned a true
+    // Specifica il percorso dell'utente e imposta la chiave isBanned a false
     database.child("users").child(bannedUserId).child("banned").setValue(false)
         .addOnCompleteListener { task ->
             if (task.isSuccessful) {
-                // Chiamata di successo
                 onComplete(true)
             } else {
-                // Chiamata fallita
                 onComplete(false)
             }
         }
@@ -101,7 +97,6 @@ fun AddEntityButton(dbType: String) {
                             // Salva l'entità nel database
                             newEntityRef.setValue(newEntity)
                                 .addOnSuccessListener {
-                                    // Mostra un Toast per il successo
                                     Toast.makeText(
                                         context,
                                         "$dbType created successfully!",
@@ -109,7 +104,6 @@ fun AddEntityButton(dbType: String) {
                                     ).show()
                                 }
                                 .addOnFailureListener { exception ->
-                                    // Mostra un Toast per il fallimento
                                     Toast.makeText(
                                         context,
                                         "Failed to create $dbType: ${exception.message}",
@@ -117,7 +111,6 @@ fun AddEntityButton(dbType: String) {
                                     ).show()
                                 }
                         } else {
-                            // Mostra un Toast se il nome è vuoto
                             Toast.makeText(
                                 context,
                                 "$dbType name cannot be empty!",
@@ -186,41 +179,33 @@ fun AddAvailabilityButton(id: String, dbType: String) {
             confirmButton = {
                 Button(
                     onClick = {
-                        // Check if the date and time format is valid
                         val dateFormat = DateTimeFormatter.ofPattern("yyyy-MM-dd H:mm")
                         try {
                             val date = LocalDateTime.parse(selectedDateTime, dateFormat)
 
-                            // Check if the selected date is in the future
                             val currentDate = LocalDateTime.now()
                             if (date.isBefore(currentDate)) {
                                 errorMessage = "The date cannot be in the past."
                             } else {
-                                // Valid date and time, save it to the database
                                 val newSlotRef = if (dbType == "coach") {
-                                    // Use the "coaches" path for coach
                                     database.child("coaches")
                                         .child(id)
                                         .child("availability")
-                                        .push() // Generate a unique ID for the slot
+                                        .push()
                                 } else {
-                                    // Use the "fields" path for field
                                     database.child("fields")
                                         .child(id)
                                         .child("availability")
-                                        .push() // Generate a unique ID for the slot
+                                        .push()
                                 }
 
-                                // Structure for the availability slot
                                 val newSlot = mapOf(
                                     "date" to selectedDateTime,
-                                    "status" to true // Always set status to true
+                                    "status" to true
                                 )
 
-                                // Save the new availability slot in the database
                                 newSlotRef.setValue(newSlot)
                                     .addOnSuccessListener {
-                                        // Show a success Toast
                                         Toast.makeText(
                                             context,
                                             "Availability slot added successfully!",
@@ -228,7 +213,6 @@ fun AddAvailabilityButton(id: String, dbType: String) {
                                         ).show()
                                     }
                                     .addOnFailureListener { exception ->
-                                        // Show an error Toast
                                         Toast.makeText(
                                             context,
                                             "Failed to add availability: ${exception.message}",
@@ -236,13 +220,11 @@ fun AddAvailabilityButton(id: String, dbType: String) {
                                         ).show()
                                     }
 
-                                // Reset the dialog and input field
                                 showDialog = false
                                 selectedDateTime = ""
                                 errorMessage = ""
                             }
                         } catch (e: DateTimeParseException) {
-                            // Invalid date format
                             errorMessage = "Invalid date format. Please use yyyy-MM-dd HH:mm."
                         }
                     }

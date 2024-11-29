@@ -42,12 +42,8 @@ fun ReservationLessonPage(modifier: Modifier = Modifier, navController: NavContr
     val database: DatabaseReference = FirebaseDatabase.getInstance().reference
     val auth = FirebaseAuth.getInstance()
     val userId = auth.currentUser?.uid ?: ""
-
-    // Snackbar state
     val snackbarHostState = remember { SnackbarHostState() }
     var reservationSuccess by remember { mutableStateOf(false) }
-
-    // Coroutine scope to launch coroutines
     val coroutineScope = rememberCoroutineScope()
 
     // Carica i dati dell'utente autenticato
@@ -55,13 +51,13 @@ fun ReservationLessonPage(modifier: Modifier = Modifier, navController: NavContr
         currentUser?.let {
             authViewModel.getUserDataFromRealtimeDatabase(it.uid) { userData ->
                 if (userData != null) {
-                    isAdmin = userData.admin // Aggiorna lo stato correttamente
+                    isAdmin = userData.admin
                 }
             }
         }
     }
 
-    // Fetch coaches data from Firebase
+    // Fetch dei dati dei coach dal database
     LaunchedEffect(Unit) {
         database.child("coaches").get().addOnSuccessListener {
             val now = LocalDateTime.now()
@@ -105,7 +101,7 @@ fun ReservationLessonPage(modifier: Modifier = Modifier, navController: NavContr
     }
 
 
-    // Function to save reservation and update slot status
+    // funzione per salvare la reservation e aggiornare lo status
     fun saveReservation(coachId: String, slotDate: String) {
         val reservationData = mapOf(
             "userId" to userId,
@@ -130,7 +126,6 @@ fun ReservationLessonPage(modifier: Modifier = Modifier, navController: NavContr
         }
     }
 
-    // Show the Snackbar when reservation is successful
     if (reservationSuccess) {
         coroutineScope.launch {
             snackbarHostState.showSnackbar("Reservation successfully saved!")
@@ -158,7 +153,7 @@ fun ReservationLessonPage(modifier: Modifier = Modifier, navController: NavContr
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            // Show coach selection
+            // mostra la lista dei coach per selezionarne uno
             if (selectedCoach == null) {
                 Text("Select Coach")
                 LazyColumn {
@@ -177,7 +172,7 @@ fun ReservationLessonPage(modifier: Modifier = Modifier, navController: NavContr
                 }
             }
 
-            // Show available slots only if a coach is selected
+            // mostra la lista degli slot disponibili se viene selezioanto il coach
             selectedCoach?.let { coach ->
                 Spacer(modifier = Modifier.height(16.dp))
                 Text("Select Slot for ${coach.name}")
@@ -187,7 +182,7 @@ fun ReservationLessonPage(modifier: Modifier = Modifier, navController: NavContr
                 if (availableSlots.isEmpty()) {
                     Spacer(modifier = Modifier.height(16.dp))
 
-                    // Show message if no slots are available
+                    // mostra un messaggio nel caso non ci siano slot disponibili
                     Text(
                         text = "No slots available for ${coach.name}.",
                         fontSize = 16.sp,
@@ -211,7 +206,7 @@ fun ReservationLessonPage(modifier: Modifier = Modifier, navController: NavContr
                 }
             }
 
-            // Display selected slot and button to confirm reservation
+            // Breve riassunto delle scelte fatte con bottone di conferma prenotazione
             selectedSlot?.let {
                 Spacer(modifier = Modifier.height(16.dp))
                 Text("Selected Slot: ${it.date}")

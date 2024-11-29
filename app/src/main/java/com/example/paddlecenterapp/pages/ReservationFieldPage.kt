@@ -41,7 +41,6 @@ fun ReservationFieldPage(
     var searchQuery by remember { mutableStateOf("") }
     var foundUsers by remember { mutableStateOf<List<User>>(emptyList()) }
     val database: DatabaseReference = FirebaseDatabase.getInstance().reference
-
     val snackbarHostState = remember { SnackbarHostState() }
     val coroutineScope = rememberCoroutineScope()
 

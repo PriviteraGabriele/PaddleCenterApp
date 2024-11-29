@@ -35,11 +35,9 @@ fun addReport(
 ) {
     val database = FirebaseDatabase.getInstance().reference
 
-    // Crea la data leggibile in formato "yyyy-MM-dd HH:mm:ss"
     val dateFormat = SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault())
     val timestamp = dateFormat.format(Date())  // Ottieni la data attuale in formato leggibile
 
-    // Crea un nuovo oggetto report
     val report = Report(
         reason = reason,
         reportedById = reportedById,
@@ -104,7 +102,7 @@ fun ReportDialog(
                             .fillMaxWidth()
                             .clickable { selectedReason = option }
                             .padding(vertical = 8.dp),
-                        verticalAlignment = Alignment.CenterVertically // Assicura che i pallini siano allineati correttamente
+                        verticalAlignment = Alignment.CenterVertically
                     ) {
                         RadioButton(
                             selected = selectedReason == option,
@@ -113,7 +111,7 @@ fun ReportDialog(
                         Spacer(modifier = Modifier.width(8.dp))
                         Text(
                             option,
-                            modifier = Modifier.align(Alignment.CenterVertically) // Centra solo il testo
+                            modifier = Modifier.align(Alignment.CenterVertically)
                         )
                     }
                 }
