@@ -64,16 +64,22 @@ fun EditReservationPage(
     }
 
     LaunchedEffect(Unit) {
-        database.child("fields").get().addOnSuccessListener {
-            val fieldMap = it.getValue<Map<String, Map<String, Any>>>()
+        database.child("fields").get().addOnSuccessListener { snapshot ->
+            val fieldMap = snapshot.getValue<Map<String, Map<String, Any>>>()
             if (fieldMap != null) {
                 val fieldList = fieldMap.map { (key, value) ->
-                    val availability = (value["availability"] as Map<String, Map<String, Any>>).mapValues { entry ->
-                        Slot(entry.value["date"] as String, entry.value["status"] as Boolean)
-                    }
-                    Field(key, value["name"] as String, availability)
+                    val availability = (value["availability"] as? Map<String, Map<String, Any>>)?.mapValues { entry ->
+                        Slot(
+                            date = entry.value["date"] as? String ?: "",
+                            status = entry.value["status"] as? Boolean ?: false
+                        )
+                    } ?: emptyMap()
+                    Field(id = key, name = value["name"] as? String ?: "Unknown", availability = availability)
                 }
                 fields = fieldList
+            } else {
+                // Gestione del caso in cui il campo è nullo
+                fields = emptyList()
             }
         }
 
@@ -85,15 +91,15 @@ fun EditReservationPage(
                     participantsList?.let { participantIds ->
                         participantIds.forEachIndexed { index, userId ->
                             database.child("users").child(userId).get().addOnSuccessListener { userSnapshot ->
-                                val userName = "${userSnapshot.child("firstName").value} ${userSnapshot.child("lastName").value}"
+                                val userName = "${userSnapshot.child("firstName").value as? String ?: "Unknown"} ${userSnapshot.child("lastName").value as? String ?: "User"}"
                                 participants = participants.toMutableList().apply {
                                     this[index] = userName to userId
                                 }
                             }
                         }
                     }
-                    val fieldId = reservationData["fieldId"] as String
-                    val slotDate = reservationData["slotDate"] as String
+                    val fieldId = reservationData["fieldId"] as? String
+                    val slotDate = reservationData["slotDate"] as? String
                     selectedField = fields.find { it.id == fieldId }
                     selectedSlot = selectedField?.availability?.values?.find { it.date == slotDate }
                 }
