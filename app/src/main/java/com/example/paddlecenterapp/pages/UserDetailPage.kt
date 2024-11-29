@@ -70,27 +70,22 @@ fun UserDetailsPage(
 ) {
     var selectedItem by remember { mutableIntStateOf(2) }
     val currentUser = authViewModel.getCurrentUser()
-
-    // Stato per controllare se l'utente è admin
     var isAdmin by remember { mutableStateOf(false) }
     var buttonTextFriend by remember { mutableStateOf("Add Friend") }
     var buttonTextBan by remember { mutableStateOf("Ban User") }
     var showDialogFriend by remember { mutableStateOf(false) }
     var showDialogReport by remember { mutableStateOf(false) }
     var showDialogBan by remember { mutableStateOf(false) }
-    var showDialogRating by remember { mutableStateOf(false) } // Stato per visualizzare il dialog del voto
-    var ratingValue by remember { mutableIntStateOf(1) } // Stato per il valore del voto
-    var averageRating by remember { mutableFloatStateOf(0f) } // Stato per la media dei voti
+    var showDialogRating by remember { mutableStateOf(false) }
+    var ratingValue by remember { mutableIntStateOf(1) } //
+    var averageRating by remember { mutableFloatStateOf(0f) }
     var user by remember { mutableStateOf<User?>(null) }
     val snackbarHostState = remember { SnackbarHostState() }
     val coroutineScope = rememberCoroutineScope()
     val context = LocalContext.current
     val friends = remember { mutableStateOf<Map<String, Boolean>>(emptyMap()) }
-
-    // Stato per controllare il messaggio del Snackbar
     var snackbarMessage by remember { mutableStateOf<String?>(null) }
 
-    // Mostra Snackbar quando `snackbarMessage` viene impostato
     snackbarMessage?.let { message ->
         LaunchedEffect(message) {
             snackbarHostState.showSnackbar(message)
@@ -117,9 +112,6 @@ fun UserDetailsPage(
 
                 // Verifica se l'utente è bannato
                 val isBanned = retrievedUser.banned
-                Log.d("Ban", "User: $retrievedUser")
-                // Log per monitorare lo stato del ban
-                Log.d("Ban", "User banned status: $isBanned")
 
                 // Imposta il testo del bottone per il ban
                 buttonTextBan = if (isBanned) "Unban User" else "Ban User"
@@ -136,18 +128,9 @@ fun UserDetailsPage(
             authViewModel.getUserDataFromRealtimeDatabase(currentUser.uid) { cUser ->
                 if (cUser != null) {
                     cUser.friends?.let {
-                        // Log per monitorare gli amici dell'utente
-                        Log.d("FriendshipCheck", "MainUser friends: $it")
                         friends.value = it
-
-                        // Log per monitorare l'ID dell'utente cercato
-                        Log.d("FriendshipCheck", "User ID of searched user: $userId")
-
                         // Verifica se sono amici
                         checkFriendship(userId, it) { isFriend ->
-                            // Log per monitorare se gli utenti sono amici
-                            Log.d("FriendshipCheck", "Are they friends? $isFriend")
-
                             // Imposta il testo del bottone per amici
                             buttonTextFriend = if (isFriend) "Remove Friend" else "Add Friend"
                         }
@@ -242,7 +225,7 @@ fun UserDetailsPage(
                         text = "[Banned]",
                         fontSize = 22.sp,
                         fontWeight = FontWeight.Bold,
-                        color = Color.Red // Imposta il colore del testo
+                        color = Color.Red
                     )
 
                     Spacer(modifier = Modifier.height(8.dp))
@@ -265,7 +248,7 @@ fun UserDetailsPage(
 
             // Modifica il campo per visualizzare la media dei voti
             OutlinedTextField(
-                value = "${"%.1f".format(averageRating)}/5", // Formatta la media come "X/5"
+                value = "${"%.1f".format(averageRating)}/5",
                 onValueChange = {},
                 label = { Text("Reputation") },
                 enabled = false
@@ -288,8 +271,7 @@ fun UserDetailsPage(
                                     "Error in adding friend."
                                 }
                             }
-                            buttonTextFriend =
-                                "Remove Friend"  // Cambia il testo del bottone per indicare che sono amici
+                            buttonTextFriend = "Remove Friend"  // Cambia il testo del bottone per indicare che sono amici
                         }
                     }
                 }
@@ -331,7 +313,7 @@ fun UserDetailsPage(
                 )
             }
 
-            // Aggiungi il nuovo bottone per il voto
+            // bottone per il voto
             Button(
                 onClick = { showDialogRating = true },
             ) {
@@ -346,7 +328,7 @@ fun UserDetailsPage(
                     text = {
                         Column {
                             Text("Select a rating from 1 to 5")
-                            // Un semplice slider per selezionare il voto
+                            // Uno slider per selezionare il voto
                             androidx.compose.material3.Slider(
                                 value = ratingValue.toFloat(),
                                 onValueChange = { ratingValue = it.toInt() },
@@ -394,7 +376,7 @@ fun UserDetailsPage(
                 )
             }
 
-            Spacer(modifier = Modifier.width(8.dp)) // Aggiungi uno spazio tra i due pulsanti
+            Spacer(modifier = Modifier.width(8.dp))
 
             Button(
                 onClick = { showDialogReport = true },
@@ -403,7 +385,7 @@ fun UserDetailsPage(
                 Text("Report User")
             }
 
-            Spacer(modifier = Modifier.width(8.dp)) // Aggiungi uno spazio tra i due pulsanti
+            Spacer(modifier = Modifier.width(8.dp))
 
             if (showDialogReport) {
                 ReportDialog(
@@ -423,7 +405,7 @@ fun UserDetailsPage(
                 )
             }
 
-            // Mostra pulsanti solo se l'utente è admin
+            // sezione admin
             if (isAdmin) {
                 Spacer(modifier = Modifier.height(16.dp))
 
@@ -478,8 +460,7 @@ fun UserDetailsPage(
                                                 "Error during user ban"
                                             }
                                         }
-                                        buttonTextBan =
-                                            "Unban User"  // Cambia il testo del bottone per indicare che non sono più amici
+                                        buttonTextBan = "Unban User"  // Cambia il testo del bottone per indicare che non sono più amici
                                     }
                                     showDialogBan = false
                                 }

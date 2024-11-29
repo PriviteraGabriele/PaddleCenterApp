@@ -38,7 +38,6 @@ fun EditReservationPage(
     var searchQuery by remember { mutableStateOf("") }
     var foundUsers by remember { mutableStateOf<List<User>>(emptyList()) }
     val database: DatabaseReference = FirebaseDatabase.getInstance().reference
-
     val snackbarHostState = remember { SnackbarHostState() }
     val coroutineScope = rememberCoroutineScope()
 
@@ -259,7 +258,7 @@ fun saveReservation(
         .addOnSuccessListener {
             coroutineScope.launch {
                 snackbarHostState.showSnackbar("Reservation updated successfully!")
-                navController.popBackStack() // Torna alla home dopo il salvataggio
+                navController.popBackStack()
             }
         }
         .addOnFailureListener {

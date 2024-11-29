@@ -65,7 +65,7 @@ fun HomePage(modifier: Modifier = Modifier, navController: NavController) {
             ) {
                 items(activeReservations) { reservation ->
                     ReservationItem(reservation = reservation, navController, onDeleteSuccess = {
-                        // Refresh the list after deletion
+                        // Refresh della lista delle preno dopo l'eliminazione
                         fetchReservations(database, currentUserId) { reservations ->
                             activeReservations = reservations
                         }
@@ -118,8 +118,8 @@ fun ReservationItem(reservation: Reservation, navController: NavController, onDe
 
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(16.dp), // Spazio tra i tasti
-                verticalAlignment = Alignment.CenterVertically // Allineamento verticale dei tasti
+                horizontalArrangement = Arrangement.spacedBy(16.dp),
+                verticalAlignment = Alignment.CenterVertically
             ) {
                 if (reservation.type == "field") {
                     Button(

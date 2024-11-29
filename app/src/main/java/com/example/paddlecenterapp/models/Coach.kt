@@ -5,4 +5,3 @@ data class Coach(
     val name: String,
     val availability: Map<String, Slot>
 )
-
