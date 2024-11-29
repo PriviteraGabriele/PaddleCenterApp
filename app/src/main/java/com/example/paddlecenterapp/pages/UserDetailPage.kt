@@ -351,7 +351,7 @@ fun UserDetailsPage(
                                 value = ratingValue.toFloat(),
                                 onValueChange = { ratingValue = it.toInt() },
                                 valueRange = 1f..5f,
-                                steps = 4,
+                                steps = 3,
                                 modifier = Modifier.fillMaxWidth()
                             )
                             Text("Rating: $ratingValue", modifier = Modifier.padding(top = 8.dp))
