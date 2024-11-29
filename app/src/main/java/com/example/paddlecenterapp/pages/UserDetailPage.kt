@@ -227,7 +227,7 @@ fun UserDetailsPage(
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            Text(text = "${user?.firstName} ${user?.lastName}", fontSize = 22.sp, fontWeight = FontWeight.Bold)
+            Text(text = "${user?.firstName} ${user?.lastName}", fontSize = 22.sp)
 
             Spacer(modifier = Modifier.height(8.dp))
 

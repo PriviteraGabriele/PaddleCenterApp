@@ -147,6 +147,10 @@ fun ProfilePage(
 
                 Spacer(modifier = Modifier.height(16.dp))
 
+                Text(text = "$firstName $lastName", fontSize = 22.sp)
+
+                Spacer(modifier = Modifier.height(8.dp))
+
                 OutlinedTextField(
                     value = bio,
                     onValueChange = { bio = it },
